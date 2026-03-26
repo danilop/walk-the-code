@@ -1,0 +1,15 @@
+# Project-specific content (added by users, tracked by their parent repo)
+/config.json
+/comments/
+/diagrams/
+
+# Build output
+/data/labs.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS
+.DS_Store

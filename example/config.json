@@ -1,0 +1,21 @@
+{
+  "title": "Monte Carlo Pi",
+  "tagline": "Estimate Pi by throwing random darts — in Python and Java.",
+  "code_dir": "samples",
+  "labs": [
+    {
+      "id": "monte_carlo_python",
+      "file": "pi.py",
+      "title": "Monte Carlo Pi (Python)",
+      "tagline": "Random sampling with error estimation. Pure Python, zero dependencies.",
+      "run_command": ["python3", "pi.py"]
+    },
+    {
+      "id": "monte_carlo_java",
+      "file": "Pi.java",
+      "title": "Monte Carlo Pi (Java)",
+      "tagline": "Same algorithm in Java. Compare the syntax side by side.",
+      "run_command": ["sh", "-c", "javac Pi.java && java Pi"]
+    }
+  ]
+}

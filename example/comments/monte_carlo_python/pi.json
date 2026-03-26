@@ -1,0 +1,22 @@
+{
+  "1": {"text": "Module docstring describing the purpose: estimate Pi via random sampling.", "hash": ""},
+  "3": {"text": "<code>math</code> provides <code>pi</code> for ground truth and <code>sqrt</code> for error calculation.", "hash": ""},
+  "4": {"text": "Python's built-in pseudo-random number generator, sufficient for Monte Carlo.", "hash": ""},
+  "6": {"text": "Fix the seed so every run produces identical results for reproducibility.", "hash": ""},
+  "8": {"text": "The core estimation function. Throws <code>n_samples</code> random darts at a unit square and counts how many land inside the quarter-circle.", "hash": "", "diagram": "monte_carlo", "highlight": ["generate", "test", "inside", "outside"]},
+  "9": {"text": "Counter for points that fall inside the quarter-circle (x² + y² ≤ 1).", "hash": "", "diagram": "monte_carlo", "highlight": ["inside"]},
+  "10": {"text": "Each iteration is one random \"dart throw\" at the unit square.", "hash": "", "diagram": "monte_carlo", "highlight": ["generate"]},
+  "11": {"text": "Random x coordinate in [0, 1).", "hash": "", "diagram": "monte_carlo", "highlight": ["generate"]},
+  "12": {"text": "Random y coordinate in [0, 1).", "hash": "", "diagram": "monte_carlo", "highlight": ["generate"]},
+  "13": {"text": "The geometric test: is this point inside the quarter-circle of radius 1?", "hash": "", "diagram": "monte_carlo", "highlight": ["test"]},
+  "14": {"text": "Point is inside — increment the counter.", "hash": "", "diagram": "monte_carlo", "highlight": ["inside"]},
+  "15": {"text": "The ratio of inside points to total, multiplied by 4, gives Pi. The area of a quarter-circle is π/4, so 4 × (inside/total) ≈ π.", "hash": "", "diagram": "monte_carlo", "highlight": ["ratio", "multiply"]},
+  "17": {"text": "Standard error of the estimate using the binomial proportion formula. Each dart is a Bernoulli trial with probability p = π/4.", "hash": "", "diagram": "monte_carlo", "highlight": ["error"]},
+  "18": {"text": "The proportion of points inside the circle is our estimate of π/4.", "hash": "", "diagram": "monte_carlo", "highlight": ["ratio"]},
+  "19": {"text": "SE = 4 × √(p(1-p)/n). The factor of 4 propagates from the π ≈ 4p relationship. Error shrinks as 1/√n.", "hash": "", "diagram": "monte_carlo", "highlight": ["error"]},
+  "21": {"text": "Test with increasing sample sizes to show convergence: error drops roughly 3× for each 10× increase in samples.", "hash": ""},
+  "27": {"text": "Run the estimation at each sample size and display the results.", "hash": ""},
+  "28": {"text": "Estimate Pi with this many random points.", "hash": "", "diagram": "monte_carlo", "highlight": ["multiply"]},
+  "29": {"text": "Compute the theoretical standard error for this estimate.", "hash": "", "diagram": "monte_carlo", "highlight": ["error"]},
+  "30": {"text": "Absolute error: how far our estimate is from the true value of Pi.", "hash": ""}
+}

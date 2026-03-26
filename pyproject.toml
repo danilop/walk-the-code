@@ -1,0 +1,10 @@
+[project]
+name = "walk-the-code"
+version = "0.1.0"
+description = "Interactive line-by-line code tutorial viewer with multi-language support and Mermaid diagrams"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+generate = ["anthropic>=0.40"]

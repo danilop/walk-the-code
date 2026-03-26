@@ -1,0 +1,8 @@
+graph TD
+    generate[Generate Random x,y] --> test{x² + y² ≤ 1?}
+    test -->|Yes| inside[Count Inside]
+    test -->|No| outside[Count Outside]
+    inside --> ratio[Ratio = Inside / Total]
+    outside --> ratio
+    ratio --> multiply[Pi ≈ 4 × Ratio]
+    multiply --> error[Standard Error Estimation]
