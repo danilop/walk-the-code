@@ -107,7 +107,15 @@
 </div>
 <script type="module">
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables: {
+  primaryColor: '#1f3c5e', primaryBorderColor: '#58a6ff', primaryTextColor: '#e6edf3',
+  secondaryColor: '#1e3a3e', secondaryBorderColor: '#4d9375', secondaryTextColor: '#e6edf3',
+  tertiaryColor: '#2d233c', tertiaryBorderColor: '#a371c4', tertiaryTextColor: '#e6edf3',
+  lineColor: '#8b949e', background: '#161b22', mainBkg: '#1f3c5e',
+  nodeBorder: '#58a6ff', clusterBkg: '#161b22', clusterBorder: '#30363d',
+  edgeLabelBackground: '#161b22', fontFamily: '-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+  fontSize: '14px'
+}});
 
 const labId = new URLSearchParams(window.location.search).get("lab");
 let explanations = {}, codeLines = [], selectedLine = null, staleLines = new Set();
