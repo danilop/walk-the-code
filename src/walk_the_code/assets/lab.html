@@ -47,8 +47,8 @@
   .explain-text code { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:.85em; }
   .stale-warning { display:inline-flex; align-items:center; gap:6px; background:#d2992233; border:1px solid #d2992255; border-radius:6px; padding:4px 10px; margin-top:12px; font-size:.8rem; color:#d29922; }
   .stale-dot { width:8px; height:8px; background:#d29922; border-radius:50%; flex-shrink:0; }
-  .diagram-container { margin-top:16px; border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--surface); overflow:auto; max-height:50vh; }
-  .diagram-container svg { height:auto; }
+  .diagram-container { margin-top:16px; border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--surface); overflow-x:auto; overflow-y:hidden; }
+  .diagram-container svg { height:auto; display:block; }
   .diagram-container.hidden { display:none; }
   .play-btn,.stop-btn { display:none; align-items:center; gap:6px; padding:5px 14px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text); font-size:.82rem; cursor:pointer; transition:all .15s; margin-left:auto; }
   .play-btn:hover { border-color:#3fb950; color:#3fb950; }
