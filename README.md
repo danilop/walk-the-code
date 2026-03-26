@@ -15,6 +15,20 @@ uv run python server.py --config example/config.json
 
 Requires [uv](https://docs.astral.sh/uv/) (Python package manager). Install with `curl -LsSf https://astral.sh/uv/install.sh | sh`.
 
+## Install as a CLI tool
+
+```bash
+uv tool install "walk-the-code @ git+https://github.com/danilop/walk-the-code"
+```
+
+This gives you three commands you can run from anywhere:
+
+```bash
+wtc-serve --config path/to/config.json        # start the tutorial server
+wtc-build path/to/config.json                  # build static site for GitHub Pages
+walk-the-code --config path/to/config.json     # alias for wtc-serve
+```
+
 ## Use in your own project
 
 1. Clone `walk-the-code/` into your project
