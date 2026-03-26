@@ -277,11 +277,13 @@ async function showExplanation(lineNum) {
     if (highlights.length > 0) {
       src += `\nclassDef wtcHighlight fill:#f96,stroke:#333,stroke-width:2px\nclass ${highlights.join(",")} wtcHighlight`;
     }
+    // Sanitize: replace Unicode that can break Mermaid parsing in some browsers
+    src = src.replace(/→/g,"->").replace(/←/g,"<-").replace(/≥/g,">=").replace(/≤/g,"<=").replace(/×/g,"x").replace(/[²]/g,"^2").replace(/[³]/g,"^3");
     try {
       const id = `wtc-diagram-${++diagramCounter}`;
       const {svg} = await mermaid.render(id, src);
       diagEl.innerHTML = svg;
-    } catch(e) { diagEl.innerHTML = `<span style="color:var(--text-muted)">Diagram render error</span>`; }
+    } catch(e) { console.warn("Mermaid render error:", e); diagEl.innerHTML = `<span style="color:var(--text-muted)">Diagram render error</span>`; }
   } else {
     diagEl.classList.add("hidden"); diagEl.innerHTML = "";
   }
