@@ -4,48 +4,43 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>walk-the-code</title>
-<style>
-  :root { --bg:#0d1117; --surface:#161b22; --border:#30363d; --text:#e6edf3; --text-muted:#8b949e; --accent:#58a6ff; --accent-dim:#1f6feb33; }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
-  .container { max-width:860px; margin:0 auto; padding:60px 24px; }
-  h1 { font-size:2.4rem; font-weight:700; letter-spacing:-0.03em; margin-bottom:8px; }
-  .tagline { font-size:1.15rem; color:var(--text-muted); margin-bottom:48px; max-width:600px; }
-  .lab-list { list-style:none; }
-  .lab-item { border:1px solid var(--border); border-radius:8px; margin-bottom:8px; transition:border-color .15s,background .15s; }
-  .lab-item:hover { border-color:var(--accent); background:var(--accent-dim); }
-  .lab-item a { display:flex; align-items:flex-start; gap:16px; padding:16px 20px; text-decoration:none; color:inherit; }
-  .lab-num { font-size:.85rem; font-weight:600; color:var(--text-muted); font-variant-numeric:tabular-nums; min-width:28px; padding-top:2px; }
-  .lab-title { font-size:1.05rem; font-weight:600; color:var(--accent); }
-  .lab-tagline { font-size:.88rem; color:var(--text-muted); margin-top:4px; line-height:1.45; }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="container">
-  <h1 id="site-title">walk-the-code</h1>
-  <p class="tagline" id="site-tagline"></p>
-  <ul class="lab-list" id="labs"></ul>
+  <h1 class="site-title" id="site-title">walk-the-code</h1>
+  <p class="site-tagline" id="site-tagline"></p>
+  <div id="content"></div>
 </div>
 <script>
-async function loadLabs() {
-  try { const r = await fetch("/api/labs"); if (r.ok) return {labs: await r.json(), server: true}; } catch(e) {}
-  const r = await fetch("data/labs.json");
-  const d = await r.json();
-  return {labs: d.labs || d.map(l => ({id:l.id, title:l.title, tagline:l.tagline})), config: d.config, server: false};
+async function loadData() {
+  try { const r = await fetch("/api/labs"); if (r.ok) { const labs = await r.json(); try { const cr = await fetch("/api/chapters"); if (cr.ok) return {labs, chapters: await cr.json()}; } catch(e){} return {labs, chapters:null}; } } catch(e) {}
+  const r = await fetch("data/labs.json"), d = await r.json();
+  return {labs: d.labs||d, chapters: d.chapters||null, config: d.config};
 }
-loadLabs().then(({labs, config, server}) => {
+loadData().then(({labs, chapters, config}) => {
   if (config) {
     document.getElementById("site-title").textContent = config.title || "walk-the-code";
     document.getElementById("site-tagline").textContent = config.tagline || "";
   }
-  const ul = document.getElementById("labs");
-  labs.forEach((lab, i) => {
-    const li = document.createElement("li");
-    li.className = "lab-item";
-    const num = String(i+1).padStart(2,"0");
-    li.innerHTML = `<a href="lab.html?lab=${lab.id}"><span class="lab-num">${num}</span><div><div class="lab-title">${lab.title}</div><div class="lab-tagline">${lab.tagline||""}</div></div></a>`;
-    ul.appendChild(li);
-  });
+  const el = document.getElementById("content");
+  const labMap = {}; labs.forEach((l,i) => labMap[l.id] = {...l, idx:i});
+
+  if (chapters && chapters.length) {
+    chapters.forEach((ch, ci) => {
+      const chLabs = ch.labs.map(id => labMap[id]).filter(Boolean);
+      const div = document.createElement("div"); div.className = "chapter";
+      div.innerHTML = `<div class="chapter-header${ci===0?" open":""}"><span class="chapter-num">Ch ${ci+1}</span><span class="chapter-title">${ch.title}</span><a class="chapter-link" href="chapter.html?chapter=${ch.id}" onclick="event.stopPropagation()">About →</a><span class="chapter-count">${chLabs.length} lab${chLabs.length!==1?"s":""}</span><span class="chapter-arrow">▶</span></div><ul class="chapter-labs${ci===0?" open":""}"></ul>`;
+      const ul = div.querySelector("ul");
+      chLabs.forEach(l => { ul.innerHTML += `<li class="lab-item"><a href="lab.html?lab=${l.id}"><span class="lab-num">${String(l.idx+1).padStart(2,"0")}</span><div><div class="lab-title-text">${l.title}</div><div class="lab-tagline">${l.tagline||""}</div></div></a></li>`; });
+      div.querySelector(".chapter-header").onclick = function() { this.classList.toggle("open"); ul.classList.toggle("open"); };
+      el.appendChild(div);
+    });
+  } else {
+    const ul = document.createElement("ul"); ul.className = "lab-list";
+    labs.forEach((l,i) => { ul.innerHTML += `<li class="lab-item"><a href="lab.html?lab=${l.id}"><span class="lab-num">${String(i+1).padStart(2,"0")}</span><div><div class="lab-title-text">${l.title}</div><div class="lab-tagline">${l.tagline||""}</div></div></a></li>`; });
+    el.appendChild(ul);
+  }
 });
 </script>
 </body>

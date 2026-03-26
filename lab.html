@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lab — walk-the-code</title>
+<link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
@@ -14,336 +15,40 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
-<style>
-  :root { --bg:#0d1117; --surface:#161b22; --border:#30363d; --text:#e6edf3; --text-muted:#8b949e; --accent:#58a6ff; --accent-dim:#1f6feb22; --line-highlight:#1f6feb33; --comment-block:#f0883e18; }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; height:100vh; display:flex; flex-direction:column; }
-  .header { padding:16px 24px; border-bottom:1px solid var(--border); flex-shrink:0; }
-  .header-top { display:flex; align-items:center; gap:12px; }
-  .back-link { color:var(--text-muted); text-decoration:none; font-size:.9rem; flex-shrink:0; }
-  .back-link:hover { color:var(--accent); }
-  .header h1 { font-size:1.3rem; font-weight:700; letter-spacing:-0.02em; flex:1; min-width:0; }
-  .header .tagline { color:var(--text-muted); font-size:.85rem; line-height:1.45; margin-top:6px; }
-  .main { display:flex; flex:1; overflow:hidden; }
-  .code-panel { flex:1; overflow-y:auto; min-width:200px; }
-  .h-resize-handle { width:5px; min-width:5px; cursor:ew-resize; background:var(--border); transition:background .15s; flex-shrink:0; }
-  .h-resize-handle:hover,.h-resize-handle.dragging { background:var(--accent); }
-  .code-panel pre { margin:0; padding:0; background:transparent!important; }
-  .code-panel code { background:transparent!important; font-size:13px; line-height:1.65; font-family:"SF Mono","Fira Code","JetBrains Mono",Consolas,monospace; }
-  .code-table { width:100%; border-collapse:collapse; }
-  .code-table td { padding:0; vertical-align:top; white-space:pre; font-family:"SF Mono","Fira Code","JetBrains Mono",Consolas,monospace; font-size:13px; line-height:1.65; }
-  .line-num { width:48px; min-width:48px; text-align:right; padding-right:12px!important; color:var(--text-muted); opacity:.5; user-select:none; cursor:pointer; }
-  .line-content { padding-left:8px!important; padding-right:16px!important; }
-  .code-line { cursor:pointer; transition:background .1s; }
-  .code-line:hover { background:var(--accent-dim); }
-  .code-line.selected .line-num { opacity:1; color:var(--accent); }
-  .code-line.selected { background:var(--line-highlight); }
-  .code-line.context { background:var(--comment-block); }
-  .code-line.stale .line-num { color:#d29922; }
-  .explain-panel { width:35%; min-width:200px; max-width:70%; overflow-y:auto; padding:24px; display:flex; flex-direction:column; flex-shrink:0; }
-  .explain-empty { color:var(--text-muted); font-size:.9rem; margin-top:40px; text-align:center; }
-  .explain-line-ref { font-size:.8rem; color:var(--text-muted); margin-bottom:8px; font-family:monospace; }
-  .explain-text { font-size:.92rem; line-height:1.65; color:var(--text); }
-  .explain-text code { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:.85em; }
-  .stale-warning { display:inline-flex; align-items:center; gap:6px; background:#d2992233; border:1px solid #d2992255; border-radius:6px; padding:4px 10px; margin-top:12px; font-size:.8rem; color:#d29922; }
-  .stale-dot { width:8px; height:8px; background:#d29922; border-radius:50%; flex-shrink:0; }
-  .diagram-container { margin-top:16px; border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--surface); overflow-x:auto; overflow-y:hidden; text-align:center; }
-  .diagram-container svg { height:auto; display:inline-block; }
-  .diagram-container.hidden { display:none; }
-  .play-btn,.stop-btn { display:none; align-items:center; gap:6px; padding:5px 14px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text); font-size:.82rem; cursor:pointer; transition:all .15s; margin-left:auto; }
-  .play-btn:hover { border-color:#3fb950; color:#3fb950; }
-  .play-btn .icon { color:#3fb950; }
-  .stop-btn:hover { border-color:#f85149; color:#f85149; }
-  .stop-btn .icon { color:#f85149; }
-  .terminal-panel { display:none; flex-direction:column; border-top:2px solid var(--border); background:#010409; flex-shrink:0; height:30vh; min-height:100px; max-height:70vh; }
-  .terminal-panel.open { display:flex; }
-  .terminal-resize-handle { height:5px; cursor:ns-resize; background:transparent; flex-shrink:0; transition:background .15s; }
-  .terminal-resize-handle:hover,.terminal-resize-handle.dragging { background:var(--accent); }
-  .terminal-header { display:flex; align-items:center; gap:10px; padding:8px 16px; background:#161b22; border-bottom:1px solid var(--border); font-size:.8rem; flex-shrink:0; }
-  .terminal-title { font-weight:600; color:var(--text-muted); display:flex; align-items:center; gap:6px; }
-  .terminal-status { color:var(--text-muted); font-family:monospace; font-size:.75rem; }
-  .terminal-status.running { color:#3fb950; }
-  .terminal-status.error { color:#f85149; }
-  .terminal-close { margin-left:auto; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.1rem; padding:2px 6px; border-radius:4px; }
-  .terminal-close:hover { background:var(--border); color:var(--text); }
-  .terminal-output { flex:1; overflow-y:auto; padding:12px 16px; font-family:"SF Mono","Fira Code","JetBrains Mono",Consolas,monospace; font-size:12px; line-height:1.55; color:#c9d1d9; white-space:pre-wrap; word-break:break-all; }
-  .terminal-output .cmd { color:#8b949e; }
-  .terminal-spinner { display:inline-block; width:8px; height:8px; border:2px solid #3fb950; border-top-color:transparent; border-radius:50%; animation:spin .8s linear infinite; }
-  @keyframes spin { to { transform:rotate(360deg); } }
-  .terminal-panel.fullscreen { position:fixed; top:0; left:0; right:0; bottom:0; height:100vh!important; max-height:100vh!important; z-index:100; border-top:none; }
-  @media (max-width:900px) { .main { flex-direction:column; } .explain-panel { width:100%; max-width:100%; min-width:0; border-top:1px solid var(--border); max-height:40vh; } .code-panel { border-right:none; } .h-resize-handle { display:none; } .code-table td.line-content { white-space:pre-wrap; word-break:break-word; } }
-</style>
+<style>body{height:100vh;display:flex;flex-direction:column}</style>
 </head>
 <body>
-<div class="header">
-  <div class="header-top">
-    <a href="/" class="back-link">&larr; Labs</a>
+<div class="lab-header">
+  <div class="lab-header-top">
+    <a href="/" class="back-link" id="back-link">&larr; Labs</a>
     <h1 id="lab-title"></h1>
-    <button class="play-btn" id="play-btn" onclick="runLab()"><span class="icon">&#9654;</span> Run</button>
-    <button class="stop-btn" id="stop-btn" onclick="stopLab()"><span class="icon">&#9632;</span> Stop</button>
+    <button class="play-btn" id="play-btn"><span class="icon">&#9654;</span> Run</button>
+    <button class="stop-btn" id="stop-btn"><span class="icon">&#9632;</span> Stop</button>
   </div>
-  <div class="tagline" id="lab-tagline"></div>
+  <div class="tagline" id="lab-tagline" style="color:var(--text-muted);font-size:.85rem;margin-top:6px"></div>
 </div>
-<div class="main">
+<div class="lab-main">
   <div class="code-panel" id="code-panel"><table class="code-table" id="code-table"></table></div>
-  <div class="h-resize-handle" id="h-resize-handle"></div>
+  <div class="h-resize" id="h-resize"></div>
   <div class="explain-panel" id="explain-panel">
-    <div class="explain-empty" id="explain-empty">Click a line to see its explanation</div>
-    <div id="explain-content" style="display:none">
-      <div class="explain-line-ref" id="explain-ref"></div>
+    <div id="explain-overview"></div>
+    <div id="explain-line" style="display:none">
+      <div class="explain-line-ref"><span id="explain-ref"></span><button class="overview-btn" id="overview-btn">← Overview</button></div>
       <div class="explain-text" id="explain-text"></div>
       <div class="diagram-container hidden" id="diagram-container"></div>
     </div>
+    <div class="nav-footer" id="nav-footer"></div>
   </div>
 </div>
 <div class="terminal-panel" id="terminal-panel">
   <div class="terminal-resize-handle" id="terminal-resize-handle"></div>
   <div class="terminal-header">
     <span class="terminal-title"><span>Terminal</span><span class="terminal-status" id="terminal-status"></span></span>
-    <button class="terminal-close" id="terminal-maximize" onclick="toggleTerminalSize()" title="Toggle fullscreen">&#x26F6;</button>
-    <button class="terminal-close" id="terminal-close" onclick="closeTerminal()" title="Stop and close">&times;</button>
+    <button class="terminal-close" id="terminal-maximize" title="Toggle fullscreen">&#x26F6;</button>
+    <button class="terminal-close" id="terminal-close" title="Stop and close">&times;</button>
   </div>
   <div class="terminal-output" id="terminal-output"></div>
 </div>
-<script type="module">
-import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables: {
-  primaryColor: '#1f3c5e', primaryBorderColor: '#58a6ff', primaryTextColor: '#e6edf3',
-  secondaryColor: '#1e3a3e', secondaryBorderColor: '#4d9375', secondaryTextColor: '#e6edf3',
-  tertiaryColor: '#2d233c', tertiaryBorderColor: '#a371c4', tertiaryTextColor: '#e6edf3',
-  lineColor: '#8b949e', background: '#161b22', mainBkg: '#1f3c5e',
-  nodeBorder: '#58a6ff', clusterBkg: '#161b22', clusterBorder: '#30363d',
-  edgeLabelBackground: '#161b22', fontFamily: '-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
-  fontSize: '14px'
-}});
-
-const labId = new URLSearchParams(window.location.search).get("lab");
-let explanations = {}, codeLines = [], selectedLine = null, staleLines = new Set();
-let serverMode = false, labLanguage = "python", annotatedLines = [], diagrams = {};
-
-// Comment patterns per language
-const COMMENT_RE = {
-  python: /^\s*#/, javascript: /^\s*\/\//, typescript: /^\s*\/\//,
-  c: /^\s*\/\//, cpp: /^\s*\/\//, rust: /^\s*\/\//, go: /^\s*\/\//, java: /^\s*\/\//,
-};
-
-async function lineHash(text) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text.trim()));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("").slice(0,8);
-}
-
-if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-
-async function init() {
-  let labMeta, codeText, expData;
-  try {
-    const r = await fetch("/api/labs");
-    if (r.ok) {
-      serverMode = true;
-      const labs = await r.json();
-      labMeta = labs.find(l => l.id === labId);
-      const [expRes, codeRes] = await Promise.all([
-        fetch(`/api/explanations/${labId}`).then(r => r.json()),
-        fetch(`/api/code/${labId}`).then(r => r.json()),
-      ]);
-      expData = expRes; codeText = codeRes.code;
-      labLanguage = codeRes.language || labMeta?.language || "python";
-      // Preload diagrams referenced in explanations
-      const dIds = new Set(Object.values(expData).map(e => typeof e === "object" ? e.diagram : null).filter(Boolean));
-      await Promise.all([...dIds].map(async id => {
-        try { const r = await fetch(`/api/diagrams/${id}`); if (r.ok) { const d = await r.json(); diagrams[id] = d.source; } } catch(e) {}
-      }));
-    }
-  } catch(e) {}
-
-  if (!serverMode) {
-    const r = await fetch("data/labs.json"); const all = await r.json();
-    const allLabs = all.labs || all;
-    const lab = allLabs.find(l => l.id === labId);
-    if (!lab) { document.body.textContent = "Lab not found"; return; }
-    labMeta = lab; codeText = lab.code; expData = lab.explanations;
-    labLanguage = lab.language || "python";
-    if (all.diagrams) diagrams = all.diagrams;
-    document.querySelector(".back-link").href = "index.html";
-  }
-
-  if (serverMode) document.getElementById("play-btn").style.display = "inline-flex";
-  if (labMeta) {
-    document.getElementById("lab-title").textContent = labMeta.title;
-    document.getElementById("lab-tagline").textContent = labMeta.tagline || "";
-    document.title = `${labMeta.title} — walk-the-code`;
-  }
-
-  explanations = expData || {};
-  codeLines = codeText.split("\n");
-
-  for (const [ln, entry] of Object.entries(explanations)) {
-    if (typeof entry === "object" && entry.hash) {
-      const idx = parseInt(ln) - 1;
-      if (idx >= 0 && idx < codeLines.length && (await lineHash(codeLines[idx])) !== entry.hash)
-        staleLines.add(parseInt(ln));
-    }
-  }
-
-  renderCode(codeText); buildAnnotatedLines();
-  // Always reset scroll and select first annotated line when opening a lab
-  document.getElementById("code-panel").scrollTop = 0;
-  selectFirstCodeLine();
-
-  if (staleLines.size > 0) {
-    const tag = document.createElement("span"); tag.className = "stale-warning";
-    tag.innerHTML = `<span class="stale-dot"></span>${staleLines.size} annotation${staleLines.size>1?"s":""} may be outdated`;
-    document.querySelector(".header").appendChild(tag);
-  }
-}
-init();
-
-function buildAnnotatedLines() { annotatedLines = Object.keys(explanations).map(Number).sort((a,b) => a-b); }
-
-function isComment(line) { return (COMMENT_RE[labLanguage] || COMMENT_RE.python).test(line); }
-
-function ownerOf(lineNum) {
-  if (annotatedLines.includes(lineNum)) return lineNum;
-  const trimmed = (codeLines[lineNum-1]||"").trim();
-  if (trimmed && !isComment(trimmed)) return lineNum;
-  for (const al of annotatedLines) { if (al > lineNum) return al; }
-  for (let i = annotatedLines.length-1; i >= 0; i--) { if (annotatedLines[i] < lineNum) return annotatedLines[i]; }
-  return annotatedLines[0] || 1;
-}
-
-function renderCode(code) {
-  const highlighted = hljs.highlight(code, {language: labLanguage, ignoreIllegals: true}).value;
-  const htmlLines = highlighted.split("\n");
-  const table = document.getElementById("code-table");
-  htmlLines.forEach((htmlLine, i) => {
-    const ln = i+1;
-    const tr = document.createElement("tr"); tr.className = "code-line";
-    if (staleLines.has(ln)) tr.classList.add("stale");
-    tr.dataset.line = ln;
-    tr.innerHTML = `<td class="line-num">${ln}</td><td class="line-content">${htmlLine||" "}</td>`;
-    tr.addEventListener("click", () => selectLine(ownerOf(ln)));
-    table.appendChild(tr);
-  });
-}
-
-function selectFirstCodeLine() { selectLine(annotatedLines.length > 0 ? annotatedLines[0] : 1); }
-
-function selectLine(lineNum) {
-  document.querySelectorAll(".code-line.selected,.code-line.context").forEach(el => el.classList.remove("selected","context"));
-  selectedLine = lineNum;
-  const row = document.querySelector(`.code-line[data-line="${lineNum}"]`);
-  if (row) {
-    row.classList.add("selected"); highlightContext(lineNum);
-    (document.querySelector(".code-line.context") || row).scrollIntoView({block:"center",behavior:"smooth"});
-  }
-  showExplanation(lineNum);
-}
-
-function highlightContext(lineNum) {
-  let i = lineNum - 2;
-  while (i >= 0) {
-    const trimmed = codeLines[i].trim();
-    if (isComment(trimmed) || trimmed === "") {
-      if (isComment(trimmed)) { const row = document.querySelector(`.code-line[data-line="${i+1}"]`); if (row) row.classList.add("context"); }
-      i--;
-    } else break;
-  }
-}
-
-function getExpText(key) { const e = explanations[key]; if (!e) return null; return typeof e === "object" ? e.text : e; }
-function getExpDiagram(key) { const e = explanations[key]; return typeof e === "object" ? e.diagram || null : null; }
-function getExpHighlight(key) { const e = explanations[key]; return typeof e === "object" ? e.highlight || [] : []; }
-
-let diagramCounter = 0;
-async function showExplanation(lineNum) {
-  const key = String(lineNum);
-  const empty = document.getElementById("explain-empty");
-  const content = document.getElementById("explain-content");
-  const ref = document.getElementById("explain-ref");
-  const text = document.getElementById("explain-text");
-  const diagEl = document.getElementById("diagram-container");
-
-  ref.textContent = `Line ${lineNum}`;
-  const expText = getExpText(key);
-  empty.style.display = "none"; content.style.display = "block";
-
-  if (expText) {
-    let html = expText;
-    if (staleLines.has(lineNum)) html += `<div class="stale-warning"><span class="stale-dot"></span>Code changed since this annotation was written</div>`;
-    text.innerHTML = html;
-  } else {
-    const trimmed = (codeLines[lineNum-1]||"").trim();
-    text.innerHTML = `<span style="color:var(--text-muted)">${!trimmed ? "Empty line" : isComment(trimmed) ? "Comment line" : "No annotation available for this line."}</span>`;
-  }
-
-  // Diagram
-  const diagId = getExpDiagram(key);
-  if (diagId && diagrams[diagId]) {
-    diagEl.classList.remove("hidden");
-    const highlights = getExpHighlight(key);
-    let src = diagrams[diagId];
-    if (highlights.length > 0) {
-      src += `\nclassDef wtcHighlight fill:#f96,stroke:#333,stroke-width:2px\nclass ${highlights.join(",")} wtcHighlight`;
-    }
-    // Sanitize: replace Unicode that can break Mermaid parsing in some browsers
-    src = src.replace(/→/g,"->").replace(/←/g,"<-").replace(/≥/g,">=").replace(/≤/g,"<=").replace(/×/g,"x").replace(/[²]/g,"^2").replace(/[³]/g,"^3");
-    try {
-      const id = `wtc-diagram-${++diagramCounter}`;
-      const {svg} = await mermaid.render(id, src);
-      diagEl.innerHTML = svg;
-    } catch(e) { console.warn("Mermaid render error:", e); diagEl.innerHTML = `<span style="color:var(--text-muted)">Diagram render error</span>`; }
-  } else {
-    diagEl.classList.add("hidden"); diagEl.innerHTML = "";
-  }
-}
-
-// Keyboard navigation
-document.addEventListener("keydown", e => {
-  if (!selectedLine || annotatedLines.length === 0) return;
-  const idx = annotatedLines.indexOf(selectedLine);
-  if (e.key === "ArrowDown" || e.key === "j") { e.preventDefault(); const n = idx>=0 ? idx+1 : annotatedLines.findIndex(l=>l>selectedLine); if (n>=0 && n<annotatedLines.length) selectLine(annotatedLines[n]); }
-  else if (e.key === "ArrowUp" || e.key === "k") { e.preventDefault(); const p = idx>0 ? idx-1 : annotatedLines.filter(l=>l<selectedLine).length-1; if (p>=0) selectLine(annotatedLines[p]); }
-});
-
-// --- Terminal: Run / Stop ---
-let eventSource = null, labRunning = false;
-window.runLab = function() {
-  if (labRunning) return; labRunning = true;
-  const panel = document.getElementById("terminal-panel"), output = document.getElementById("terminal-output");
-  const status = document.getElementById("terminal-status");
-  panel.classList.add("open"); output.textContent = ""; status.textContent = "";
-  document.getElementById("play-btn").style.display = "none";
-  document.getElementById("stop-btn").style.display = "inline-flex";
-  eventSource = new EventSource(`/api/run/${labId}`);
-  eventSource.addEventListener("status", e => {
-    const d = JSON.parse(e.data);
-    if (d.state === "running") { status.innerHTML = `<span class="terminal-spinner"></span> running`; status.className = "terminal-status running"; output.innerHTML = `<span class="cmd">$ ${d.cmd.replace(/</g,"&lt;")}</span>\n`; }
-    else if (d.state === "done") { eventSource.close(); eventSource = null; labRunning = false; status.textContent = d.exit_code === 0 ? "done" : `exit ${d.exit_code}`; status.className = d.exit_code === 0 ? "terminal-status" : "terminal-status error"; document.getElementById("stop-btn").style.display = "none"; if (serverMode) document.getElementById("play-btn").style.display = "inline-flex"; }
-  });
-  eventSource.addEventListener("output", e => { output.textContent += JSON.parse(e.data).text; output.scrollTop = output.scrollHeight; });
-  eventSource.onerror = () => { if (eventSource) { eventSource.close(); eventSource = null; } if (labRunning) { labRunning = false; status.textContent = "connection lost"; status.className = "terminal-status error"; document.getElementById("stop-btn").style.display = "none"; if (serverMode) document.getElementById("play-btn").style.display = "inline-flex"; } };
-};
-window.stopLab = function() { fetch(`/api/stop/${labId}`); if (eventSource) { eventSource.close(); eventSource = null; } labRunning = false; closeTerminal(); };
-window.closeTerminal = function() { if (labRunning) { fetch(`/api/stop/${labId}`); if (eventSource) { eventSource.close(); eventSource = null; } labRunning = false; } const p = document.getElementById("terminal-panel"); p.classList.remove("open","fullscreen"); document.getElementById("terminal-maximize").innerHTML = "&#x26F6;"; document.getElementById("stop-btn").style.display = "none"; if (serverMode) document.getElementById("play-btn").style.display = "inline-flex"; };
-window.toggleTerminalSize = function() { const p = document.getElementById("terminal-panel"); p.classList.toggle("fullscreen"); document.getElementById("terminal-maximize").innerHTML = p.classList.contains("fullscreen") ? "&#x29C9;" : "&#x26F6;"; };
-
-// Terminal resize
-(function(){
-  const h = document.getElementById("terminal-resize-handle"), p = document.getElementById("terminal-panel");
-  let startY, startH;
-  h.addEventListener("mousedown", e => { e.preventDefault(); startY=e.clientY; startH=p.offsetHeight; h.classList.add("dragging"); document.addEventListener("mousemove",drag); document.addEventListener("mouseup",up); });
-  function drag(e) { p.style.height = Math.max(100,Math.min(window.innerHeight*.7,startH-(e.clientY-startY)))+"px"; }
-  function up() { h.classList.remove("dragging"); document.removeEventListener("mousemove",drag); document.removeEventListener("mouseup",up); }
-})();
-
-// Horizontal resize (code ↔ explain panel)
-(function(){
-  const h = document.getElementById("h-resize-handle"), ep = document.getElementById("explain-panel"), main = document.querySelector(".main");
-  let startX, startW;
-  h.addEventListener("mousedown", e => { e.preventDefault(); startX=e.clientX; startW=ep.offsetWidth; h.classList.add("dragging"); document.addEventListener("mousemove",drag); document.addEventListener("mouseup",up); });
-  function drag(e) { const w = Math.max(200, Math.min(main.offsetWidth*0.7, startW-(e.clientX-startX))); ep.style.width = w+"px"; }
-  function up() { h.classList.remove("dragging"); document.removeEventListener("mousemove",drag); document.removeEventListener("mouseup",up); }
-})();
-</script>
+<script type="module" src="lab.js"></script>
 </body>
 </html>

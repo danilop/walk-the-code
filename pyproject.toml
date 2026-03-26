@@ -24,3 +24,8 @@ packages = ["src/walk_the_code"]
 [tool.hatch.build.targets.wheel.force-include]
 "index.html" = "walk_the_code/assets/index.html"
 "lab.html" = "walk_the_code/assets/lab.html"
+"chapter.html" = "walk_the_code/assets/chapter.html"
+"style.css" = "walk_the_code/assets/style.css"
+"lab.js" = "walk_the_code/assets/lab.js"
+"terminal.js" = "walk_the_code/assets/terminal.js"
+"chapter.js" = "walk_the_code/assets/chapter.js"

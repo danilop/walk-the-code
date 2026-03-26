@@ -2,10 +2,8 @@
 
 import json
 import os
-import shutil
 import subprocess
 import sys
-import threading
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from socketserver import ThreadingMixIn
@@ -35,6 +33,11 @@ def load_config(config_path):
 
 _running: dict[str, subprocess.Popen] = {}
 
+CONTENT_TYPES = {
+    ".html": "text/html", ".css": "text/css", ".js": "application/javascript",
+    ".json": "application/json", ".mjs": "application/javascript",
+}
+
 
 class WTCHandler(SimpleHTTPRequestHandler):
     config = None
@@ -52,8 +55,11 @@ class WTCHandler(SimpleHTTPRequestHandler):
         if self.path == "/api/labs":
             self._json([{
                 "id": l["id"], "title": l["title"], "tagline": l.get("tagline", ""),
+                "description": l.get("description", ""),
                 "file": l["file"], "language": l.get("language", detect_language(l["file"], default_lang)),
             } for l in labs])
+        elif self.path == "/api/chapters":
+            self._json(cfg.get("chapters", []))
         elif self.path.startswith("/api/code/"):
             lab_id = self.path[len("/api/code/"):]
             lab = next((l for l in labs if l["id"] == lab_id), None)
@@ -83,8 +89,10 @@ class WTCHandler(SimpleHTTPRequestHandler):
             self._run_lab(self.path[len("/api/run/"):])
         elif self.path.startswith("/api/stop/"):
             self._stop_lab(self.path[len("/api/stop/"):])
-        elif self.path.startswith("/lab/") or self.path.startswith("/lab.html"):
+        elif self.path.split("?")[0] in ("/lab", "/lab.html", "/lab/"):
             self._serve_asset("lab.html")
+        elif self.path.split("?")[0] in ("/chapter", "/chapter.html", "/chapter/"):
+            self._serve_asset("chapter.html")
         else:
             super().do_GET()
 
@@ -145,7 +153,8 @@ class WTCHandler(SimpleHTTPRequestHandler):
         filepath = ASSETS_DIR / filename
         if filepath.exists():
             content = filepath.read_bytes()
-            ct = "text/html" if filename.endswith(".html") else "application/octet-stream"
+            ext = Path(filename).suffix
+            ct = CONTENT_TYPES.get(ext, "application/octet-stream")
             self.send_response(200)
             self.send_header("Content-Type", ct)
             self.send_header("Content-Length", len(content))
@@ -187,6 +196,7 @@ def serve():
     print(f"  config: {config_path}")
     print(f"  code_dir: {config['_code_dir']}")
     print(f"  labs: {len(config.get('labs', []))}")
+    print(f"  chapters: {len(config.get('chapters', []))}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -208,6 +218,7 @@ def build():
         exp_path = config_dir / "comments" / lab["id"] / f"{stem}.json"
         labs.append({
             "id": lab["id"], "title": lab["title"], "tagline": lab.get("tagline", ""),
+            "description": lab.get("description", ""),
             "file": lab["file"],
             "language": lab.get("language", detect_language(lab["file"], default_lang)),
             "code": code_path.read_text() if code_path.exists() else "",
@@ -220,10 +231,14 @@ def build():
         for mmd in diagrams_dir.glob("*.mmd"):
             diagrams[mmd.stem] = mmd.read_text()
 
+    chapters = config.get("chapters", [])
+
     output_dir = config_dir / "data"
     output_dir.mkdir(exist_ok=True)
-    bundle = {"config": {"title": config.get("title", ""), "tagline": config.get("tagline", "")},
-              "labs": labs, "diagrams": diagrams}
+    bundle = {
+        "config": {"title": config.get("title", ""), "tagline": config.get("tagline", "")},
+        "labs": labs, "diagrams": diagrams, "chapters": chapters,
+    }
     output_path = output_dir / "labs.json"
     output_path.write_text(json.dumps(bundle))
-    print(f"Built {output_path} ({len(labs)} labs, {len(diagrams)} diagrams, {output_path.stat().st_size / 1024:.0f} KB)")
+    print(f"Built {output_path} ({len(labs)} labs, {len(chapters)} chapters, {len(diagrams)} diagrams, {output_path.stat().st_size / 1024:.0f} KB)")
