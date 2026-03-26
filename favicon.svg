@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Left brace -->
+  <path d="M10 4 Q6 4 6 8 L6 13 Q6 16 3 16 Q6 16 6 19 L6 24 Q6 28 10 28"
+        fill="none" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Right brace -->
+  <path d="M22 4 Q26 4 26 8 L26 13 Q26 16 29 16 Q26 16 26 19 L26 24 Q26 28 22 28"
+        fill="none" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Walking path (three stepping dots between braces) -->
+  <circle cx="12" cy="20" r="2" fill="#f0883e"/>
+  <circle cx="16" cy="14" r="2" fill="#f0883e"/>
+  <circle cx="20" cy="20" r="2" fill="#f0883e"/>
+</svg>

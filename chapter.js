@@ -8,16 +8,25 @@ mermaid.initialize({ startOnLoad:false, theme:'base', themeVariables:{
 const chapterId = new URLSearchParams(location.search).get("chapter");
 
 (async () => {
-  let chapters, labs;
+  let chapters, labs, config, diagrams={}, serverMode=false;
   try {
     const r = await fetch("/api/chapters");
-    if (r.ok) { chapters = await r.json(); labs = await (await fetch("/api/labs")).json(); }
+    if (r.ok) {
+      chapters = await r.json();
+      labs = await (await fetch("/api/labs")).json();
+      config = await window.WTCSite.loadConfig();
+      serverMode = true;
+    }
   } catch(e) {}
   if (!chapters) {
     const d = await (await fetch("data/labs.json")).json();
     chapters = d.chapters||[]; labs = d.labs||d;
+    config = d.config || {};
+    diagrams = d.diagrams || {};
     document.getElementById("back-link").href = "index.html";
   }
+
+  window.WTCSite.renderGitHubCorner(config);
 
   const labMap = {}; labs.forEach((l,i) => labMap[l.id] = {...l, idx:i});
   const ci = chapters.findIndex(c => c.id === chapterId);
@@ -26,13 +35,27 @@ const chapterId = new URLSearchParams(location.search).get("chapter");
 
   document.getElementById("ch-num").textContent = `Chapter ${ci+1}`;
   document.getElementById("ch-title").textContent = ch.title;
-  document.title = `${ch.title} — walk-the-code`;
+  window.WTCSite.setDocumentTitle(ch.title, config);
   document.getElementById("ch-desc").innerHTML = ch.description || "";
 
   if (ch.diagram) {
     const box = document.getElementById("diagram-box"); box.style.display = "block";
     try { const {svg} = await mermaid.render("ch-diag", ch.diagram); box.innerHTML = svg; }
     catch(e) { box.innerHTML = '<span style="color:var(--text-muted)">Diagram error</span>'; }
+  }
+
+  if (ch.comparison_diagram) {
+    let src = diagrams[ch.comparison_diagram];
+    if (!src && serverMode) {
+      try { const r = await fetch(`/api/diagrams/${ch.comparison_diagram}`); if (r.ok) src = (await r.json()).source; } catch(e) {}
+    }
+    if (src) {
+      const wrap = document.createElement("div");
+      wrap.innerHTML = `<h2 style="font-size:1.1rem;font-weight:600;margin-bottom:10px;color:var(--text-muted)">How the labs compare</h2><div class="diagram-box" id="compare-box"></div>`;
+      document.getElementById("diagram-box").after(wrap);
+      try { const {svg} = await mermaid.render("ch-comp", src); wrap.querySelector("#compare-box").innerHTML = svg; }
+      catch(e) { wrap.querySelector("#compare-box").innerHTML = '<span style="color:var(--text-muted)">Diagram error</span>'; }
+    }
   }
 
   const ul = document.getElementById("labs");

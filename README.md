@@ -9,7 +9,7 @@ Try the included example (Monte Carlo Pi in Python and Java):
 ```bash
 git clone https://github.com/danilop/walk-the-code.git
 cd walk-the-code
-uv run python server.py --config example/config.json
+python3 server.py --config example/config.json
 # Open http://localhost:8000
 ```
 
@@ -37,6 +37,7 @@ walk-the-code --config path/to/config.json     # alias for wtc-serve
    {
      "title": "My Tutorial",
      "tagline": "Learn something cool.",
+     "repo_url": "https://github.com/your-org/your-project",
      "language": "python",
      "code_dir": "../src",
      "chapters": [
@@ -68,7 +69,7 @@ walk-the-code --config path/to/config.json     # alias for wtc-serve
    }
    ```
 3. Add explanations in `comments/step1/main.json` (see [Comment format](#comment-format))
-4. Run `wtc-serve --config config.json` (or `uv run python server.py --config config.json`)
+4. Run `wtc-serve --config config.json` (or `python3 server.py --config config.json`)
 
 The `config.json`, `comments/`, and `diagrams/` directories are gitignored in this repo — they're project-specific content tracked by your parent repo.
 
@@ -88,6 +89,7 @@ The `config.json`, `comments/`, and `diagrams/` directories are gitignored in th
 |---|---|---|
 | `title` | no | Project title shown on the index page |
 | `tagline` | no | Subtitle shown below the title |
+| `repo_url` | no | Repository URL used for the GitHub corner link on tutorial pages |
 | `language` | no | Default language for all labs (auto-detected from file extension if omitted) |
 | `code_dir` | no | Path to the code directory, relative to config.json (defaults to `.`) |
 | `chapters` | no | Array of chapter objects that group labs into themed sections |
@@ -210,7 +212,7 @@ In static mode, the Run button is hidden (no server to execute code). A sample G
     WTC_ASSETS=$("$WTC_PYTHON" -c "from walk_the_code import ASSETS_DIR; print(ASSETS_DIR)")
     mkdir -p _site/data
     cp "$WTC_ASSETS"/index.html "$WTC_ASSETS"/lab.html "$WTC_ASSETS"/chapter.html _site/
-    cp "$WTC_ASSETS"/style.css "$WTC_ASSETS"/lab.js "$WTC_ASSETS"/terminal.js "$WTC_ASSETS"/chapter.js _site/
+    cp "$WTC_ASSETS"/style.css "$WTC_ASSETS"/site.js "$WTC_ASSETS"/lab.js "$WTC_ASSETS"/terminal.js "$WTC_ASSETS"/chapter.js _site/
     cp walk-the-code/data/labs.json _site/data/
 ```
 
@@ -227,5 +229,5 @@ uv run python add_hashes.py
 The `example/` folder contains a complete working tutorial with two files computing Pi via Monte Carlo simulation — one in Python, one in Java — sharing a single Mermaid diagram with per-line highlighting.
 
 ```bash
-uv run python server.py --config example/config.json
+python3 server.py --config example/config.json
 ```

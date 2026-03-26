@@ -7,26 +7,15 @@ updates the comment files in the mirror structure (comments/<lab_id>/<file>.json
 
 import hashlib
 import json
-import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-CONFIG_PATH = ROOT / (sys.argv[1] if len(sys.argv) > 1 else "config.json")
+CONFIG_PATH = (ROOT / (sys.argv[1] if len(sys.argv) > 1 else "config.json")).resolve()
+CONFIG_DIR = CONFIG_PATH.parent
 config = json.loads(CONFIG_PATH.read_text())
-CODE_DIR = (ROOT / config.get("code_dir", ".")).resolve()
-DEFAULT_LANG = config.get("language", "python")
-
-COMMENT_RE = {
-    "python": re.compile(r"^\s*#"),
-    "javascript": re.compile(r"^\s*//"),
-    "typescript": re.compile(r"^\s*//"),
-    "c": re.compile(r"^\s*//"),
-    "cpp": re.compile(r"^\s*//"),
-    "rust": re.compile(r"^\s*//"),
-    "go": re.compile(r"^\s*//"),
-    "java": re.compile(r"^\s*//"),
-}
+CODE_DIR = (CONFIG_DIR / config.get("code_dir", ".")).resolve()
+COMMENTS_DIR = CONFIG_DIR / "comments"
 
 
 def line_hash(text):
@@ -37,7 +26,7 @@ for lab in config.get("labs", []):
     lab_id, code_file = lab["id"], lab["file"]
     code_path = CODE_DIR / lab_id / code_file
     stem = Path(code_file).stem
-    exp_path = ROOT / "comments" / lab_id / f"{stem}.json"
+    exp_path = COMMENTS_DIR / lab_id / f"{stem}.json"
 
     if not code_path.exists():
         print(f"  {lab_id}: code file not found, skipping")

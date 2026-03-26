@@ -16,7 +16,7 @@ let serverMode=false, labLanguage="python", annotatedLines=[], diagrams={};
 let allLabs=[], allChapters=[], labDescription="";
 
 const COMMENT_RE = {
-  python:/^\s*#/,javascript:/^\s*\/\//,typescript:/^\s*\/\//,
+  python:/^\s*(#|"""|''')/,javascript:/^\s*\/\//,typescript:/^\s*\/\//,
   c:/^\s*\/\//,cpp:/^\s*\/\//,rust:/^\s*\/\//,go:/^\s*\/\//,java:/^\s*\/\//,
 };
 
@@ -29,9 +29,10 @@ if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 
 // --- Data loading ---
 async function loadServerData() {
-  const r = await fetch("/api/labs");
+  const [r, config] = await Promise.all([fetch("/api/labs"), window.WTCSite.loadConfig()]);
   if (!r.ok) return null;
   serverMode = true;
+  window.WTCSite.renderGitHubCorner(config);
   allLabs = await r.json();
   const labMeta = allLabs.find(l=>l.id===labId);
   const [expData, codeRes] = await Promise.all([
@@ -50,6 +51,7 @@ async function loadServerData() {
 
 async function loadStaticData() {
   const d = await (await fetch("data/labs.json")).json();
+  window.WTCSite.renderGitHubCorner(d.config || {});
   allLabs = d.labs||d; allChapters = d.chapters||[];
   const lab = allLabs.find(l=>l.id===labId);
   if (!lab) return null;
@@ -153,6 +155,7 @@ function buildNav() {
 
 // --- Keyboard nav ---
 document.addEventListener("keydown",e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){e.preventDefault();const btn=document.getElementById("play-btn");if(btn&&btn.style.display!=="none")btn.click();return;}
   if(!annotatedLines.length) return;
   if(e.key==="Escape"){ e.preventDefault(); window.showOverview(); return; }
   if(selectedLine===null && (e.key==="ArrowDown"||e.key==="j")){ e.preventDefault(); selectLine(annotatedLines[0]); return; }
@@ -180,10 +183,11 @@ document.addEventListener("keydown",e=>{
 
   const {labMeta, codeText, expData} = data;
   if(serverMode) document.getElementById("play-btn").style.display="inline-flex";
+  else { const hint=document.getElementById("run-hint"); if(hint) hint.style.display="inline-flex"; }
   if(labMeta){
     document.getElementById("lab-title").textContent=labMeta.title;
     document.getElementById("lab-tagline").textContent=labMeta.tagline||"";
-    document.title=`${labMeta.title} — walk-the-code`;
+    window.WTCSite.setDocumentTitle(labMeta.title, await window.WTCSite.loadConfig());
   }
   explanations=expData||{}; codeLines=codeText.split("\n");
   for(const[ln,entry]of Object.entries(explanations)){
@@ -194,4 +198,6 @@ document.addEventListener("keydown",e=>{
   window.showOverview();
   if(staleLines.size>0){const t=document.createElement("span");t.className="stale-warning";t.innerHTML=`<span class="stale-dot"></span>${staleLines.size} annotation${staleLines.size>1?"s":""} may be outdated`;document.querySelector(".lab-header").appendChild(t);}
   initTerminal(labId, serverMode);
+  const expToggle=document.getElementById("explain-toggle");
+  if(expToggle) expToggle.onclick=()=>{document.getElementById("explain-panel").classList.toggle("mobile-hidden");expToggle.classList.toggle("collapsed");};
 })();

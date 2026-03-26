@@ -23,6 +23,7 @@ packages = ["src/walk_the_code"]
 "lab.html" = "walk_the_code/assets/lab.html"
 "chapter.html" = "walk_the_code/assets/chapter.html"
 "style.css" = "walk_the_code/assets/style.css"
+"site.js" = "walk_the_code/assets/site.js"
 "lab.js" = "walk_the_code/assets/lab.js"
 "terminal.js" = "walk_the_code/assets/terminal.js"
 "chapter.js" = "walk_the_code/assets/chapter.js"

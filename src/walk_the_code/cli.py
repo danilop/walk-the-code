@@ -1,5 +1,6 @@
 """walk-the-code CLI entry points."""
 
+import hashlib
 import json
 import os
 import subprocess
@@ -7,6 +8,10 @@ import sys
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from socketserver import ThreadingMixIn
+
+
+def _line_hash(text):
+    return hashlib.sha256(text.strip().encode()).hexdigest()[:8]
 
 from . import ASSETS_DIR
 
@@ -58,6 +63,12 @@ class WTCHandler(SimpleHTTPRequestHandler):
                 "description": l.get("description", ""),
                 "file": l["file"], "language": l.get("language", detect_language(l["file"], default_lang)),
             } for l in labs])
+        elif self.path == "/api/config":
+            self._json({
+                "title": cfg.get("title", ""),
+                "tagline": cfg.get("tagline", ""),
+                "repo_url": cfg.get("repo_url", ""),
+            })
         elif self.path == "/api/chapters":
             self._json(cfg.get("chapters", []))
         elif self.path.startswith("/api/code/"):
@@ -233,12 +244,92 @@ def build():
 
     chapters = config.get("chapters", [])
 
+    # --- Validation ---
+    warnings = []
+    errors = []
+    referenced_diagrams = set()
+
+    for lab_entry in labs:
+        lid = lab_entry["id"]
+        code_lines = lab_entry["code"].split("\n") if lab_entry["code"] else []
+        total_lines = len(code_lines)
+        explanations = lab_entry.get("explanations", {})
+
+        for line_str, entry in explanations.items():
+            line_num = int(line_str)
+            # Out-of-range line numbers
+            if line_num < 1 or line_num > total_lines:
+                errors.append(f"{lid}: annotation for line {line_num} but code has only {total_lines} lines")
+            # Empty text
+            text = entry.get("text", "") if isinstance(entry, dict) else entry
+            if not text or not text.strip():
+                warnings.append(f"{lid}: empty annotation text at line {line_num}")
+            # Missing diagram references
+            if isinstance(entry, dict) and entry.get("diagram"):
+                diag_id = entry["diagram"]
+                referenced_diagrams.add(diag_id)
+                if diag_id not in diagrams:
+                    errors.append(f"{lid}: line {line_num} references diagram '{diag_id}' but no {diag_id}.mmd found")
+            # Highlight without diagram
+            if isinstance(entry, dict) and entry.get("highlight") and not entry.get("diagram"):
+                warnings.append(f"{lid}: line {line_num} has highlight but no diagram reference")
+            # Stale hash detection
+            if isinstance(entry, dict) and entry.get("hash") and 1 <= line_num <= total_lines:
+                expected = _line_hash(code_lines[line_num - 1])
+                if entry["hash"] != expected:
+                    warnings.append(f"{lid}: line {line_num} hash mismatch (annotation may be outdated)")
+
+    # Chapter lab and diagram references
+    all_lab_ids = {l["id"] for l in labs}
+    for ch in chapters:
+        for lab_id in ch.get("labs", []):
+            if lab_id not in all_lab_ids:
+                errors.append(f"Chapter '{ch['id']}': references lab '{lab_id}' which is not in the labs list")
+        comp_diag = ch.get("comparison_diagram")
+        if comp_diag:
+            referenced_diagrams.add(comp_diag)
+            if comp_diag not in diagrams:
+                errors.append(f"Chapter '{ch['id']}': comparison_diagram '{comp_diag}' not found in diagrams/")
+
+    # Orphaned diagram files
+    orphaned = set(diagrams.keys()) - referenced_diagrams
+    # Exclude diagrams referenced in chapter inline definitions
+    for ch in chapters:
+        ch_diag = ch.get("diagram", "")
+        for d in orphaned.copy():
+            if d in ch_diag:
+                orphaned.discard(d)
+    if orphaned:
+        warnings.append(f"Orphaned diagram files not referenced by any annotation: {', '.join(sorted(orphaned))}")
+
+    stale = [w for w in warnings if "hash mismatch" in w]
+    other_warnings = [w for w in warnings if "hash mismatch" not in w]
+    if stale:
+        print(f"\n  Stale annotations ({len(stale)}) — run add_hashes.py to fix:")
+        for w in stale:
+            print(f"    ~ {w}")
+    if other_warnings:
+        print(f"\n  Warnings ({len(other_warnings)}):")
+        for w in other_warnings:
+            print(f"    - {w}")
+    if errors:
+        print(f"\n  Errors ({len(errors)}):")
+        for e in errors:
+            print(f"    ! {e}")
+
     output_dir = config_dir / "data"
     output_dir.mkdir(exist_ok=True)
     bundle = {
-        "config": {"title": config.get("title", ""), "tagline": config.get("tagline", "")},
+        "config": {
+            "title": config.get("title", ""),
+            "tagline": config.get("tagline", ""),
+            "repo_url": config.get("repo_url", ""),
+        },
         "labs": labs, "diagrams": diagrams, "chapters": chapters,
     }
     output_path = output_dir / "labs.json"
     output_path.write_text(json.dumps(bundle))
-    print(f"Built {output_path} ({len(labs)} labs, {len(chapters)} chapters, {len(diagrams)} diagrams, {output_path.stat().st_size / 1024:.0f} KB)")
+    print(f"\nBuilt {output_path} ({len(labs)} labs, {len(chapters)} chapters, {len(diagrams)} diagrams, {output_path.stat().st_size / 1024:.0f} KB)")
+    if errors:
+        print(f"\nBuild completed with {len(errors)} error(s). Fix them to ensure the tutorial works correctly.")
+        sys.exit(1)
