@@ -8,3 +8,19 @@ dependencies = []
 
 [project.optional-dependencies]
 generate = ["anthropic>=0.40"]
+
+[project.scripts]
+walk-the-code = "walk_the_code.cli:serve"
+wtc-serve = "walk_the_code.cli:serve"
+wtc-build = "walk_the_code.cli:build"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/walk_the_code"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"index.html" = "walk_the_code/assets/index.html"
+"lab.html" = "walk_the_code/assets/lab.html"
