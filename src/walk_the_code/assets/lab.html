@@ -50,8 +50,8 @@
   .explain-text code { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:.85em; }
   .stale-warning { display:inline-flex; align-items:center; gap:6px; background:#d2992233; border:1px solid #d2992255; border-radius:6px; padding:4px 10px; margin-top:12px; font-size:.8rem; color:#d29922; }
   .stale-dot { width:8px; height:8px; background:#d29922; border-radius:50%; flex-shrink:0; }
-  .diagram-container { margin:0 12px 12px; border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--surface); flex:1; min-height:120px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-  .diagram-container svg { max-width:100%; max-height:100%; }
+  .diagram-container { margin:0 12px 12px; border:1px solid var(--border); border-radius:8px; padding:8px; background:var(--surface); flex:1; min-height:100px; max-height:50vh; overflow:auto; }
+  .diagram-container svg { min-width:300px; height:auto; display:block; }
   .diagram-container.hidden { display:none; }
   .play-btn,.stop-btn { display:none; align-items:center; gap:6px; padding:5px 14px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text); font-size:.82rem; cursor:pointer; transition:all .15s; margin-left:auto; }
   .play-btn:hover { border-color:#3fb950; color:#3fb950; }
