@@ -6,9 +6,6 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = []
 
-[project.optional-dependencies]
-generate = ["anthropic>=0.40"]
-
 [project.scripts]
 walk-the-code = "walk_the_code.cli:serve"
 wtc-serve = "walk_the_code.cli:serve"
