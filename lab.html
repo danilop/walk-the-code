@@ -40,15 +40,18 @@
   .code-line.selected { background:var(--line-highlight); }
   .code-line.context { background:var(--comment-block); }
   .code-line.stale .line-num { color:#d29922; }
-  .explain-panel { width:35%; min-width:200px; max-width:70%; overflow-y:auto; padding:24px; display:flex; flex-direction:column; flex-shrink:0; }
-  .explain-empty { color:var(--text-muted); font-size:.9rem; margin-top:40px; text-align:center; }
+  .explain-panel { width:35%; min-width:200px; max-width:70%; overflow:hidden; padding:0; display:flex; flex-direction:column; flex-shrink:0; }
+  .explain-empty { color:var(--text-muted); font-size:.9rem; margin-top:40px; text-align:center; padding:24px; }
+  #explain-content { display:none; flex:1; min-height:0; flex-direction:column; }
+  #explain-content.visible { display:flex; }
+  .explain-text-wrap { padding:24px 24px 12px; overflow-y:auto; flex-shrink:1; }
   .explain-line-ref { font-size:.8rem; color:var(--text-muted); margin-bottom:8px; font-family:monospace; }
   .explain-text { font-size:.92rem; line-height:1.65; color:var(--text); }
   .explain-text code { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:.85em; }
   .stale-warning { display:inline-flex; align-items:center; gap:6px; background:#d2992233; border:1px solid #d2992255; border-radius:6px; padding:4px 10px; margin-top:12px; font-size:.8rem; color:#d29922; }
   .stale-dot { width:8px; height:8px; background:#d29922; border-radius:50%; flex-shrink:0; }
-  .diagram-container { margin-top:16px; border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--surface); }
-  .diagram-container svg { max-width:100%; height:auto; }
+  .diagram-container { margin:0 12px 12px; border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--surface); flex:1; min-height:120px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .diagram-container svg { max-width:100%; max-height:100%; }
   .diagram-container.hidden { display:none; }
   .play-btn,.stop-btn { display:none; align-items:center; gap:6px; padding:5px 14px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text); font-size:.82rem; cursor:pointer; transition:all .15s; margin-left:auto; }
   .play-btn:hover { border-color:#3fb950; color:#3fb950; }
@@ -89,9 +92,11 @@
   <div class="h-resize-handle" id="h-resize-handle"></div>
   <div class="explain-panel" id="explain-panel">
     <div class="explain-empty" id="explain-empty">Click a line to see its explanation</div>
-    <div id="explain-content" style="display:none">
-      <div class="explain-line-ref" id="explain-ref"></div>
-      <div class="explain-text" id="explain-text"></div>
+    <div id="explain-content">
+      <div class="explain-text-wrap">
+        <div class="explain-line-ref" id="explain-ref"></div>
+        <div class="explain-text" id="explain-text"></div>
+      </div>
       <div class="diagram-container hidden" id="diagram-container"></div>
     </div>
   </div>
@@ -257,7 +262,7 @@ async function showExplanation(lineNum) {
 
   ref.textContent = `Line ${lineNum}`;
   const expText = getExpText(key);
-  empty.style.display = "none"; content.style.display = "block";
+  empty.style.display = "none"; content.classList.add("visible");
 
   if (expText) {
     let html = expText;
