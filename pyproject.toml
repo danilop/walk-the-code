@@ -22,6 +22,7 @@ packages = ["src/walk_the_code"]
 "index.html" = "walk_the_code/assets/index.html"
 "lab.html" = "walk_the_code/assets/lab.html"
 "chapter.html" = "walk_the_code/assets/chapter.html"
+"favicon.svg" = "walk_the_code/assets/favicon.svg"
 "style.css" = "walk_the_code/assets/style.css"
 "site.js" = "walk_the_code/assets/site.js"
 "lab.js" = "walk_the_code/assets/lab.js"
