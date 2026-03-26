@@ -4,14 +4,20 @@ Interactive line-by-line code tutorial viewer. Click a line, read what it does. 
 
 ## Quick start
 
+Try the included example (Monte Carlo Pi in Python and Java):
+
 ```bash
-uv run python server.py
+git clone https://github.com/danilop/walk-the-code.git
+cd walk-the-code
+uv run python server.py --config example/config.json
 # Open http://localhost:8000
 ```
 
+Requires [uv](https://docs.astral.sh/uv/) (Python package manager). Install with `curl -LsSf https://astral.sh/uv/install.sh | sh`.
+
 ## Use in your own project
 
-1. Clone or copy `walk-the-code/` into your project
+1. Clone `walk-the-code/` into your project
 2. Create a `config.json` pointing at your code:
    ```json
    {
@@ -23,10 +29,10 @@ uv run python server.py
      ]
    }
    ```
-3. Add explanations in `comments/step1/main.json`
+3. Add explanations in `comments/step1/main.json` (see [Comment format](#comment-format))
 4. Run `uv run python server.py`
 
-See the `example/` folder for a complete working setup with Python and Java files.
+The `config.json`, `comments/`, and `diagrams/` directories are gitignored in this repo — they're project-specific content tracked by your parent repo.
 
 ## How it works
 
@@ -35,6 +41,14 @@ See the `example/` folder for a complete working setup with Python and Java file
 - **diagrams/** — shared Mermaid diagrams referenced from comments, with per-line node highlighting
 - **server.py** — local server with code browsing and optional execution via SSE
 - **build_static.py** — bundles everything into `data/labs.json` for static deployment (GitHub Pages)
+
+## Keyboard shortcuts
+
+| Key | Action |
+|---|---|
+| `↓` or `j` | Next annotated line |
+| `↑` or `k` | Previous annotated line |
+| Click any line | Jump to that line's explanation |
 
 ## Supported languages
 
@@ -56,7 +70,7 @@ Add a `run_command` to any lab in config.json. The Run button appears in the bro
 {"id": "my_lab", "file": "main.go", "run_command": ["go", "run", "main.go"]}
 ```
 
-Use `sh -c "..."` for compile-then-run languages. If `run_command` is omitted, the Run button is hidden for that lab.
+Use `sh -c "..."` for compile-then-run languages. If `run_command` is omitted, the Run button is hidden for that lab. Code execution only works with the local server — static deployments are read-only.
 
 ## Comment format
 
@@ -95,7 +109,15 @@ uv run python build_static.py
 # Produces data/labs.json — serve index.html + lab.html + data/ as a static site
 ```
 
-In static mode, the Run button is hidden (no server to execute code).
+In static mode, the Run button is hidden (no server to execute code). A sample GitHub Actions workflow:
+
+```yaml
+- run: python walk-the-code/build_static.py
+- run: |
+    mkdir -p _site/data
+    cp walk-the-code/index.html walk-the-code/lab.html _site/
+    cp walk-the-code/data/labs.json _site/data/
+```
 
 ## Generate explanations with AI
 
