@@ -137,8 +137,11 @@ code{background:var(--surface);border:1px solid var(--border);border-radius:4px;
 .edit-btn .icon{color:var(--accent)}
 .reset-btn:hover{border-color:var(--chapter-accent);color:var(--chapter-accent)}
 .reset-btn .icon{color:var(--chapter-accent)}
-.editor-wrapper{display:none;position:relative;width:100%;height:100%;overflow:hidden}
-.editor-highlight,.code-editor{position:absolute;top:0;left:0;width:100%;height:100%;margin:0;border:none;padding:8px 12px;font-family:"SF Mono","Fira Code","JetBrains Mono",Consolas,monospace;font-size:13px;line-height:1.65;tab-size:4;white-space:pre;overflow:auto}
+.code-panel.edit-mode{border-left:3px solid var(--accent)}
+.editor-wrapper{display:none;width:100%;height:100%;overflow:hidden}
+.editor-gutter{width:48px;min-width:48px;padding:8px 12px 8px 0;text-align:right;font-family:"SF Mono","Fira Code","JetBrains Mono",Consolas,monospace;font-size:13px;line-height:1.65;color:var(--text-muted);opacity:.5;background:var(--bg);overflow:hidden;white-space:pre;user-select:none;flex-shrink:0}
+.editor-code-area{position:relative;flex:1;overflow:hidden}
+.editor-highlight,.code-editor{position:absolute;top:0;left:0;width:100%;height:100%;margin:0;border:none;padding:8px 8px 8px 8px;font-family:"SF Mono","Fira Code","JetBrains Mono",Consolas,monospace;font-size:13px;line-height:1.65;tab-size:4;white-space:pre;overflow:auto}
 .editor-highlight{background:var(--bg);color:var(--text);pointer-events:none;z-index:0}
 .code-editor{background:transparent;color:transparent;caret-color:var(--text);z-index:1;resize:none;outline:none;-webkit-text-fill-color:transparent}
 .run-hint{display:none;align-items:center;gap:4px;margin-left:auto;font-size:.75rem;color:var(--text-muted);border:1px dashed var(--border);border-radius:6px;padding:4px 10px;cursor:help}

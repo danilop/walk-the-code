@@ -3,7 +3,7 @@
 /**
  * Edit mode: toggle between read-only annotated view and an editable
  * code editor with syntax highlighting (overlay technique: transparent
- * textarea over a highlight.js-rendered <pre>).
+ * textarea over a highlight.js-rendered <pre>) and line numbers.
  */
 
 import { state, labId } from './lab-state.js';
@@ -44,9 +44,16 @@ export function showEditControls() {
 /** Sync highlighted <pre> content with the textarea value */
 function syncHighlight(editor, highlight) {
   const code = editor.value;
-  // highlight.js render + append a newline so the last line scrolls correctly
   const rendered = hljs.highlight(code + "\n", { language: state.labLanguage, ignoreIllegals: true }).value;
   highlight.innerHTML = rendered;
+}
+
+/** Update line number gutter to match current line count */
+function syncLineNumbers(editor, gutter) {
+  const lineCount = editor.value.split("\n").length;
+  const nums = [];
+  for (let i = 1; i <= lineCount; i++) nums.push(i);
+  gutter.textContent = nums.join("\n");
 }
 
 function enterEditMode() {
@@ -61,12 +68,24 @@ function enterEditMode() {
   // Hide the annotated table
   codeTable.style.display = "none";
 
+  // Visual hint: edit mode border
+  codePanel.classList.add("edit-mode");
+
   // Create or show the editor wrapper
   let wrapper = document.getElementById("editor-wrapper");
   if (!wrapper) {
     wrapper = document.createElement("div");
     wrapper.id = "editor-wrapper";
     wrapper.className = "editor-wrapper";
+
+    // Line number gutter
+    const gutter = document.createElement("div");
+    gutter.id = "editor-gutter";
+    gutter.className = "editor-gutter";
+
+    // Container for the code area (highlight + textarea overlay)
+    const codeArea = document.createElement("div");
+    codeArea.className = "editor-code-area";
 
     // Highlighted backdrop
     const highlight = document.createElement("pre");
@@ -82,13 +101,17 @@ function enterEditMode() {
     editor.setAttribute("autocorrect", "off");
     editor.setAttribute("autocapitalize", "off");
 
-    // Sync on input
-    editor.addEventListener("input", () => syncHighlight(editor, highlight));
+    // Sync highlight and line numbers on input
+    editor.addEventListener("input", () => {
+      syncHighlight(editor, highlight);
+      syncLineNumbers(editor, gutter);
+    });
 
-    // Sync scroll positions
+    // Sync scroll positions (textarea -> highlight + gutter)
     editor.addEventListener("scroll", () => {
       highlight.scrollTop = editor.scrollTop;
       highlight.scrollLeft = editor.scrollLeft;
+      gutter.scrollTop = editor.scrollTop;
     });
 
     // Tab key for indentation
@@ -103,17 +126,21 @@ function enterEditMode() {
       }
     });
 
-    wrapper.appendChild(highlight);
-    wrapper.appendChild(editor);
+    codeArea.appendChild(highlight);
+    codeArea.appendChild(editor);
+    wrapper.appendChild(gutter);
+    wrapper.appendChild(codeArea);
     codePanel.appendChild(wrapper);
   }
 
   const editor = /** @type {HTMLTextAreaElement} */ (document.getElementById("code-editor"));
   const highlight = document.getElementById("editor-highlight");
+  const gutter = document.getElementById("editor-gutter");
 
-  wrapper.style.display = "block";
+  wrapper.style.display = "flex";
   editor.value = currentCode;
   syncHighlight(editor, highlight);
+  syncLineNumbers(editor, gutter);
   editor.focus();
 
   // Update buttons
@@ -124,6 +151,7 @@ function enterEditMode() {
 /** @param {function} onReset */
 function exitEditMode(onReset) {
   editMode = false;
+  const codePanel = document.getElementById("code-panel");
   const codeTable = document.getElementById("code-table");
   const wrapper = document.getElementById("editor-wrapper");
   const editBtn = document.getElementById("edit-btn");
@@ -131,6 +159,7 @@ function exitEditMode(onReset) {
 
   if (wrapper) wrapper.style.display = "none";
   codeTable.style.display = "";
+  codePanel.classList.remove("edit-mode");
 
   editBtn.style.display = "inline-flex";
   resetBtn.style.display = "none";
