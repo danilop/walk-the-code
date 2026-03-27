@@ -159,6 +159,8 @@ export function showOverview() {
     ovHtml += `<div class="exercises"><h3>Exercises</h3><div class="exercise-count">${state.completedExercises.size}/${state.labExercises.length} completed</div>${state.labExercises.map((ex, i) => `<div class="exercise"><label class="exercise-label"><input type="checkbox" class="exercise-check" data-idx="${i}" ${state.completedExercises.has(i) ? 'checked' : ''}><span class="exercise-prompt">${ex.prompt}</span></label>${ex.hint ? `<div class="exercise-hint" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">Show hint</div><div class="exercise-hint-text">${ex.hint}</div>` : ""}</div>`).join("")}</div>`;
   }
   if (ovHtml) {
+    // Add reset progress link
+    ovHtml += `<div class="reset-progress"><button class="reset-progress-btn" id="reset-progress-btn">Reset progress for this lab</button></div>`;
     ov.innerHTML = ovHtml;
     ov.querySelectorAll('.exercise-check').forEach(cb => {
       cb.addEventListener('change', e => {
@@ -169,6 +171,18 @@ export function showOverview() {
         if (counter) counter.textContent = `${state.completedExercises.size}/${state.labExercises.length} completed`;
       });
     });
+    const resetBtn = document.getElementById("reset-progress-btn");
+    if (resetBtn) {
+      resetBtn.addEventListener("click", () => {
+        state.visitedLines = new Set();
+        state.completedExercises = new Set();
+        try { localStorage.removeItem(`wtc-visited-${labId}`); } catch (e) { /* ignore */ }
+        try { localStorage.removeItem(`wtc-exercises-${labId}`); } catch (e) { /* ignore */ }
+        document.querySelectorAll(".code-line.visited").forEach(el => el.classList.remove("visited"));
+        updateProgress();
+        showOverview(); // Re-render to uncheck exercise boxes
+      });
+    }
   } else {
     ov.innerHTML = '<div style="color:var(--text-muted);margin-top:40px;text-align:center">Click a line to see its explanation</div>';
   }

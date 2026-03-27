@@ -117,6 +117,9 @@ code{background:var(--surface);border:1px solid var(--border);border-radius:4px;
 .exercise-count{font-size:.75rem;color:var(--text-muted);margin-top:4px}
 .exercise-prompt{font-size:.88rem;line-height:1.5}
 .exercise-hint{font-size:.82rem;color:var(--text-muted);margin-top:4px;cursor:pointer}
+.reset-progress{margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}
+.reset-progress-btn{background:none;border:none;color:var(--text-muted);font-size:.78rem;cursor:pointer;padding:0;text-decoration:underline;opacity:.6;transition:opacity .15s}
+.reset-progress-btn:hover{opacity:1;color:var(--text)}
 .exercise-hint-text{display:none;margin-top:4px;padding:8px;background:var(--bg);border-radius:4px;font-size:.82rem}
 .stale-warning{display:inline-flex;align-items:center;gap:6px;background:#d2992233;border:1px solid #d2992255;border-radius:6px;padding:4px 10px;margin-top:12px;font-size:.8rem;color:#d29922}
 .stale-dot{width:8px;height:8px;background:#d29922;border-radius:50%;flex-shrink:0}
