@@ -38,6 +38,7 @@ window.WTCSite = (() => {
       return;
     }
     if (existing) existing.remove();
+    if (!/^https:\/\//i.test(repoUrl)) return;
     const link = document.createElement("a");
     link.id = "github-corner";
     link.className = "github-corner";
@@ -98,5 +99,11 @@ window.WTCSite = (() => {
     });
   }
 
-  return { loadConfig, renderGitHubCorner, setDocumentTitle, siteTitle, addProgressBadges };
+  /** @param {string} str @returns {string} */
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  return { loadConfig, renderGitHubCorner, setDocumentTitle, siteTitle, addProgressBadges, escapeHtml };
 })();

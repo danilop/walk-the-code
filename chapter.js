@@ -61,7 +61,7 @@ const chapterId = new URLSearchParams(location.search).get("chapter");
   const ul = document.getElementById("labs");
   (ch.labs||[]).forEach(id => {
     const l = labMap[id]; if (!l) return;
-    ul.innerHTML += `<li class="lab-item"><a href="lab.html?lab=${l.id}"><span class="lab-num">${String(l.idx+1).padStart(2,"0")}</span><div><div class="lab-title-text">${l.title}</div><div class="lab-tagline">${l.tagline||""}</div></div></a></li>`;
+    ul.innerHTML += `<li class="lab-item"><a href="lab.html?lab=${l.id}"><span class="lab-num">${String(l.idx+1).padStart(2,"0")}</span><div><div class="lab-title-text">${WTCSite.escapeHtml(l.title)}</div><div class="lab-tagline">${WTCSite.escapeHtml(l.tagline||"")}</div></div></a></li>`;
   });
 
   window.WTCSite.addProgressBadges(labs);
@@ -92,13 +92,13 @@ const chapterId = new URLSearchParams(location.search).get("chapter");
           if (oi === saved[qKey] && oi !== check.correct) cls += " incorrect";
           if (oi === saved[qKey]) cls += " selected";
         }
-        optionsHtml += `<li class="${cls}" data-qi="${qi}" data-oi="${oi}"><input type="radio" name="quiz-${qi}" ${answered ? "disabled" : ""} ${answered && oi === saved[qKey] ? "checked" : ""}><span>${opt}</span></li>`;
+        optionsHtml += `<li class="${cls}" data-qi="${qi}" data-oi="${oi}"><input type="radio" name="quiz-${qi}" ${answered ? "disabled" : ""} ${answered && oi === saved[qKey] ? "checked" : ""}><span>${WTCSite.escapeHtml(opt)}</span></li>`;
       });
 
       card.innerHTML = `
-        <div class="quiz-question">${qi + 1}. ${check.question}</div>
+        <div class="quiz-question">${qi + 1}. ${WTCSite.escapeHtml(check.question)}</div>
         <ul class="quiz-options">${optionsHtml}</ul>
-        <div class="quiz-explanation${answered ? " visible" : ""}">${check.explanation}</div>
+        <div class="quiz-explanation${answered ? " visible" : ""}">${WTCSite.escapeHtml(check.explanation)}</div>
       `;
       section.appendChild(card);
     });
@@ -159,6 +159,6 @@ const chapterId = new URLSearchParams(location.search).get("chapter");
   }
 
   const nav = document.getElementById("nav-row");
-  if (ci > 0) nav.innerHTML += `<a class="nav-btn" href="chapter.html?chapter=${chapters[ci-1].id}">&larr; ${chapters[ci-1].title}</a>`;
-  if (ci < chapters.length-1) nav.innerHTML += `<a class="nav-btn" href="chapter.html?chapter=${chapters[ci+1].id}">${chapters[ci+1].title} &rarr;</a>`;
+  if (ci > 0) nav.innerHTML += `<a class="nav-btn" href="chapter.html?chapter=${chapters[ci-1].id}">&larr; ${WTCSite.escapeHtml(chapters[ci-1].title)}</a>`;
+  if (ci < chapters.length-1) nav.innerHTML += `<a class="nav-btn" href="chapter.html?chapter=${chapters[ci+1].id}">${WTCSite.escapeHtml(chapters[ci+1].title)} &rarr;</a>`;
 })();

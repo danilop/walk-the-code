@@ -16,7 +16,8 @@
     "repo_url": {
       "type": "string",
       "format": "uri",
-      "description": "Repository URL used for the GitHub corner link on tutorial pages."
+      "pattern": "^https://",
+      "description": "Repository URL (must be https) used for the GitHub corner link on tutorial pages."
     },
     "language": {
       "type": "string",
@@ -87,6 +88,13 @@
           "items": {
             "type": "string"
           }
+        },
+        "knowledge_checks": {
+          "type": "array",
+          "description": "Multiple-choice questions shown on the chapter page for self-assessment.",
+          "items": {
+            "$ref": "#/$defs/knowledge_check"
+          }
         }
       },
       "required": ["id", "title", "labs"],
@@ -155,6 +163,30 @@
         }
       },
       "required": ["id", "file", "title"],
+      "additionalProperties": false
+    },
+    "knowledge_check": {
+      "type": "object",
+      "description": "A multiple-choice question with one correct answer and an explanation.",
+      "properties": {
+        "question": { "type": "string", "description": "The question text." },
+        "options": {
+          "type": "array",
+          "description": "Array of answer choices.",
+          "minItems": 2,
+          "items": { "type": "string" }
+        },
+        "correct": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Zero-based index of the correct option."
+        },
+        "explanation": {
+          "type": "string",
+          "description": "Explanation shown after answering."
+        }
+      },
+      "required": ["question", "options", "correct", "explanation"],
       "additionalProperties": false
     },
     "exercise": {

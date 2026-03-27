@@ -834,11 +834,11 @@ class TestValidator(unittest.TestCase):
             self.assertEqual(ctx.exception.code, 1)
 
     def test_missing_title(self):
-        """Missing title should produce an error."""
+        """Missing title should produce a warning (not an error)."""
         config_path = self._make_project({"labs": [{"id": "test_lab", "file": "main.py", "title": "T"}]})
         exit_code, output = self._run_validate(config_path)
-        self.assertEqual(exit_code, 1)
-        self.assertIn("Missing required top-level field: title", output)
+        self.assertEqual(exit_code, 0)
+        self.assertIn("No top-level 'title' field", output)
 
     def test_missing_labs(self):
         """Missing labs should produce an error."""

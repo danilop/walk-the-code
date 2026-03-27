@@ -44,15 +44,15 @@ loadData().then(({labs, chapters, config}) => {
     chapters.forEach((ch, ci) => {
       const chLabs = ch.labs.map(id => labMap[id]).filter(Boolean);
       const div = document.createElement("div"); div.className = "chapter";
-      div.innerHTML = `<div class="chapter-header${ci===0?" open":""}"><span class="chapter-num">Ch ${ci+1}</span><span class="chapter-title">${ch.title}</span><a class="chapter-link" href="chapter.html?chapter=${ch.id}" onclick="event.stopPropagation()">About →</a><span class="chapter-count">${chLabs.length} lab${chLabs.length!==1?"s":""}</span><span class="chapter-arrow">▶</span></div><ul class="chapter-labs${ci===0?" open":""}"></ul>`;
+      div.innerHTML = `<div class="chapter-header${ci===0?" open":""}"><span class="chapter-num">Ch ${ci+1}</span><span class="chapter-title">${WTCSite.escapeHtml(ch.title)}</span><a class="chapter-link" href="chapter.html?chapter=${ch.id}" onclick="event.stopPropagation()">About →</a><span class="chapter-count">${chLabs.length} lab${chLabs.length!==1?"s":""}</span><span class="chapter-arrow">▶</span></div><ul class="chapter-labs${ci===0?" open":""}"></ul>`;
       const ul = div.querySelector("ul");
-      chLabs.forEach(l => { ul.innerHTML += `<li class="lab-item"><a href="lab.html?lab=${l.id}"><span class="lab-num">${String(l.idx+1).padStart(2,"0")}</span><div><div class="lab-title-text">${l.title}</div><div class="lab-tagline">${l.tagline||""}</div></div></a></li>`; });
+      chLabs.forEach(l => { ul.innerHTML += `<li class="lab-item"><a href="lab.html?lab=${l.id}"><span class="lab-num">${String(l.idx+1).padStart(2,"0")}</span><div><div class="lab-title-text">${WTCSite.escapeHtml(l.title)}</div><div class="lab-tagline">${WTCSite.escapeHtml(l.tagline||"")}</div></div></a></li>`; });
       div.querySelector(".chapter-header").onclick = function() { this.classList.toggle("open"); ul.classList.toggle("open"); };
       el.appendChild(div);
     });
   } else {
     const ul = document.createElement("ul"); ul.className = "lab-list";
-    labs.forEach((l,i) => { ul.innerHTML += `<li class="lab-item"><a href="lab.html?lab=${l.id}"><span class="lab-num">${String(i+1).padStart(2,"0")}</span><div><div class="lab-title-text">${l.title}</div><div class="lab-tagline">${l.tagline||""}</div></div></a></li>`; });
+    labs.forEach((l,i) => { ul.innerHTML += `<li class="lab-item"><a href="lab.html?lab=${l.id}"><span class="lab-num">${String(i+1).padStart(2,"0")}</span><div><div class="lab-title-text">${WTCSite.escapeHtml(l.title)}</div><div class="lab-tagline">${WTCSite.escapeHtml(l.tagline||"")}</div></div></a></li>`; });
     el.appendChild(ul);
   }
   window.WTCSite.addProgressBadges(labs);

@@ -34,6 +34,14 @@ interface Explanation {
   highlight?: string[];
 }
 
+/** Knowledge check question for chapter quizzes */
+interface KnowledgeCheck {
+  question: string;
+  options: string[];
+  correct: number;
+  explanation: string;
+}
+
 /** Chapter definition from config */
 interface Chapter {
   id: string;
@@ -42,6 +50,7 @@ interface Chapter {
   diagram?: string;
   comparison_diagram?: string;
   labs?: string[];
+  knowledge_checks?: KnowledgeCheck[];
 }
 
 /** Site config (top-level fields from config.json) */
@@ -85,6 +94,7 @@ interface WTCSiteModule {
   setDocumentTitle(pageTitle: string, config: SiteConfig): void;
   siteTitle(config: SiteConfig): string;
   addProgressBadges(labs: Lab[]): void;
+  escapeHtml(str: string): string;
 }
 
 interface Window {

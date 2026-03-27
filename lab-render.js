@@ -154,9 +154,9 @@ export function showOverview() {
   ov.style.display = "block";
   let ovHtml = '';
   if (state.labDescription) ovHtml += `<div class="lab-desc">${state.labDescription}</div>`;
-  if (state.labObjectives.length) ovHtml += `<div class="learning-objectives"><h3>Learning Objectives</h3><ul>${state.labObjectives.map(o => `<li>${o}</li>`).join("")}</ul></div>`;
+  if (state.labObjectives.length) ovHtml += `<div class="learning-objectives"><h3>Learning Objectives</h3><ul>${state.labObjectives.map(o => `<li>${window.WTCSite.escapeHtml(o)}</li>`).join("")}</ul></div>`;
   if (state.labExercises.length) {
-    ovHtml += `<div class="exercises"><h3>Exercises</h3><div class="exercise-count">${state.completedExercises.size}/${state.labExercises.length} completed</div>${state.labExercises.map((ex, i) => `<div class="exercise"><label class="exercise-label"><input type="checkbox" class="exercise-check" data-idx="${i}" ${state.completedExercises.has(i) ? 'checked' : ''}><span class="exercise-prompt">${ex.prompt}</span></label>${ex.hint ? `<div class="exercise-hint" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">Show hint</div><div class="exercise-hint-text">${ex.hint}</div>` : ""}</div>`).join("")}</div>`;
+    ovHtml += `<div class="exercises"><h3>Exercises</h3><div class="exercise-count">${state.completedExercises.size}/${state.labExercises.length} completed</div>${state.labExercises.map((ex, i) => `<div class="exercise"><label class="exercise-label"><input type="checkbox" class="exercise-check" data-idx="${i}" ${state.completedExercises.has(i) ? 'checked' : ''}><span class="exercise-prompt">${window.WTCSite.escapeHtml(ex.prompt)}</span></label>${ex.hint ? `<div class="exercise-hint" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">Show hint</div><div class="exercise-hint-text">${window.WTCSite.escapeHtml(ex.hint)}</div>` : ""}</div>`).join("")}</div>`;
   }
   if (ovHtml) {
     // Add reset progress link
@@ -192,7 +192,7 @@ export function buildNav() {
   const nav = document.getElementById("nav-footer"), idx = state.allLabs.findIndex(l => l.id === labId);
   if (idx < 0) return;
   const ch = state.allChapters.find(c => (c.labs || []).includes(labId));
-  if (ch) nav.innerHTML += `<a class="nav-link chapter" href="chapter.html?chapter=${ch.id}">${ch.title}</a>`;
-  if (idx > 0) nav.innerHTML += `<a class="nav-link" href="lab.html?lab=${state.allLabs[idx - 1].id}">&larr; ${state.allLabs[idx - 1].title}</a>`;
-  if (idx < state.allLabs.length - 1) nav.innerHTML += `<a class="nav-link" href="lab.html?lab=${state.allLabs[idx + 1].id}">${state.allLabs[idx + 1].title} &rarr;</a>`;
+  if (ch) nav.innerHTML += `<a class="nav-link chapter" href="chapter.html?chapter=${ch.id}">${window.WTCSite.escapeHtml(ch.title)}</a>`;
+  if (idx > 0) nav.innerHTML += `<a class="nav-link" href="lab.html?lab=${state.allLabs[idx - 1].id}">&larr; ${window.WTCSite.escapeHtml(state.allLabs[idx - 1].title)}</a>`;
+  if (idx < state.allLabs.length - 1) nav.innerHTML += `<a class="nav-link" href="lab.html?lab=${state.allLabs[idx + 1].id}">${window.WTCSite.escapeHtml(state.allLabs[idx + 1].title)} &rarr;</a>`;
 }

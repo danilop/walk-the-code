@@ -7,6 +7,7 @@ import tempfile
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from socketserver import ThreadingMixIn
+from urllib.parse import urlparse
 
 from . import ASSETS_DIR
 from .config import CONTENT_TYPES, detect_language
@@ -20,6 +21,19 @@ class WTCHandler(SimpleHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ASSETS_DIR), **kwargs)
+
+    def _check_origin(self) -> bool:
+        """Reject cross-origin requests to dangerous endpoints (CSRF protection)."""
+        port = self.server.server_address[1]
+        allowed = {f"http://localhost:{port}", f"http://127.0.0.1:{port}"}
+        origin = self.headers.get("Origin")
+        if origin:
+            return origin in allowed
+        referer = self.headers.get("Referer")
+        if referer:
+            parsed = urlparse(referer)
+            return f"{parsed.scheme}://{parsed.netloc}" in allowed
+        return True  # same-origin requests may omit both headers
 
     def do_GET(self):
         cfg = self.__class__.config
@@ -72,7 +86,13 @@ class WTCHandler(SimpleHTTPRequestHandler):
             if not lab:
                 return self._json({})
             p = config_dir / "comments" / lab["id"] / f"{Path(lab['file']).stem}.json"
-            self._json(json.loads(p.read_text()) if p.exists() else {})
+            if p.exists():
+                try:
+                    self._json(json.loads(p.read_text()))
+                except (json.JSONDecodeError, OSError) as exc:
+                    self._json({"error": f"bad comment file: {exc}"}, 500)
+            else:
+                self._json({})
         elif self.path.startswith("/api/diagrams/"):
             did = self.path[len("/api/diagrams/"):].replace("..", "").replace("/", "")
             p = config_dir / "diagrams" / f"{did}.mmd"
@@ -108,6 +128,8 @@ class WTCHandler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def _run_lab(self, lab_id):
+        if not self._check_origin():
+            return self._json({"error": "forbidden: cross-origin request"}, 403)
         cfg = self.__class__.config
         lab = next((l for l in cfg.get("labs", []) if l["id"] == lab_id), None)
         if not lab or "run_command" not in lab:
@@ -145,6 +167,8 @@ class WTCHandler(SimpleHTTPRequestHandler):
 
     def _run_modified_lab(self, lab_id):
         """Run a lab with modified code posted by the client."""
+        if not self._check_origin():
+            return self._json({"error": "forbidden: cross-origin request"}, 403)
         cfg = self.__class__.config
         lab = next((l for l in cfg.get("labs", []) if l["id"] == lab_id), None)
         if not lab or "run_command" not in lab:
@@ -164,7 +188,7 @@ class WTCHandler(SimpleHTTPRequestHandler):
         tmp.close()
         tmp_path = Path(tmp.name)
         # Build command replacing the original file with the temp file
-        cmd = [tmp_path.name if arg == lab["file"] else arg for arg in lab["run_command"]]
+        cmd = [arg.replace(lab["file"], tmp_path.name) for arg in lab["run_command"]]
         if lab_id in _running:
             try: _running[lab_id].kill()
             except OSError: pass
@@ -198,6 +222,8 @@ class WTCHandler(SimpleHTTPRequestHandler):
             tmp_path.unlink(missing_ok=True)
 
     def _stop_lab(self, lab_id):
+        if not self._check_origin():
+            return self._json({"error": "forbidden: cross-origin request"}, 403)
         if lab_id in _running:
             try: _running[lab_id].kill(); _running[lab_id].wait(timeout=2)
             except (OSError, subprocess.TimeoutExpired): pass

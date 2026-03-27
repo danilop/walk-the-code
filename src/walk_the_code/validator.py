@@ -34,7 +34,7 @@ def validate():
 
     # --- Required top-level fields ---
     if not config.get("title"):
-        errors.append("Missing required top-level field: title")
+        warnings.append("No top-level 'title' field — will default to 'walk-the-code'")
     if not config.get("labs"):
         errors.append("Missing required top-level field: labs (or labs array is empty)")
 
@@ -149,6 +149,25 @@ def validate():
                 errors.append(
                     f"chapter '{ch_id}': comparison_diagram '{comp_diag}' not found in diagrams/"
                 )
+
+    # --- Knowledge checks ---
+    for ch in config.get("chapters", []):
+        ch_id = ch.get("id", "?")
+        for qi, check in enumerate(ch.get("knowledge_checks", [])):
+            prefix = f"chapter '{ch_id}' knowledge_checks[{qi}]"
+            if not isinstance(check, dict):
+                errors.append(f"{prefix}: must be an object")
+                continue
+            if not check.get("question"):
+                errors.append(f"{prefix}: missing 'question'")
+            opts = check.get("options", [])
+            if not isinstance(opts, list) or len(opts) < 2:
+                errors.append(f"{prefix}: 'options' must be an array with at least 2 items")
+            correct = check.get("correct")
+            if not isinstance(correct, int) or correct < 0 or correct >= len(opts):
+                errors.append(f"{prefix}: 'correct' must be an integer index into options")
+            if not check.get("explanation"):
+                errors.append(f"{prefix}: missing 'explanation'")
 
     # --- Summary ---
     print(f"\nwalk-the-code validate: {config_path}\n")
