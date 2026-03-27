@@ -1,7 +1,9 @@
 // @ts-check
 
 /**
- * Edit mode: toggle between read-only annotated view and editable textarea.
+ * Edit mode: toggle between read-only annotated view and an editable
+ * code editor with syntax highlighting (overlay technique: transparent
+ * textarea over a highlight.js-rendered <pre>).
  */
 
 import { state, labId } from './lab-state.js';
@@ -39,30 +41,57 @@ export function showEditControls() {
   if (editBtn) editBtn.style.display = "inline-flex";
 }
 
+/** Sync highlighted <pre> content with the textarea value */
+function syncHighlight(editor, highlight) {
+  const code = editor.value;
+  // highlight.js render + append a newline so the last line scrolls correctly
+  const rendered = hljs.highlight(code + "\n", { language: state.labLanguage, ignoreIllegals: true }).value;
+  highlight.innerHTML = rendered;
+}
+
 function enterEditMode() {
   editMode = true;
   const codePanel = document.getElementById("code-panel");
   const codeTable = document.getElementById("code-table");
   const editBtn = document.getElementById("edit-btn");
   const resetBtn = document.getElementById("reset-btn");
-  const playBtn = document.getElementById("play-btn");
 
-  // Get current code (may already be modified from a previous edit session)
   const currentCode = getEditorCode() || originalCode;
 
-  // Hide the table, show textarea
+  // Hide the annotated table
   codeTable.style.display = "none";
 
-  let editor = /** @type {HTMLTextAreaElement} */ (document.getElementById("code-editor"));
-  if (!editor) {
-    editor = document.createElement("textarea");
+  // Create or show the editor wrapper
+  let wrapper = document.getElementById("editor-wrapper");
+  if (!wrapper) {
+    wrapper = document.createElement("div");
+    wrapper.id = "editor-wrapper";
+    wrapper.className = "editor-wrapper";
+
+    // Highlighted backdrop
+    const highlight = document.createElement("pre");
+    highlight.id = "editor-highlight";
+    highlight.className = "editor-highlight";
+
+    // Transparent textarea on top
+    const editor = document.createElement("textarea");
     editor.id = "code-editor";
     editor.className = "code-editor";
     editor.spellcheck = false;
     editor.setAttribute("autocomplete", "off");
     editor.setAttribute("autocorrect", "off");
     editor.setAttribute("autocapitalize", "off");
-    // Handle tab key for indentation
+
+    // Sync on input
+    editor.addEventListener("input", () => syncHighlight(editor, highlight));
+
+    // Sync scroll positions
+    editor.addEventListener("scroll", () => {
+      highlight.scrollTop = editor.scrollTop;
+      highlight.scrollLeft = editor.scrollLeft;
+    });
+
+    // Tab key for indentation
     editor.addEventListener("keydown", (e) => {
       if (e.key === "Tab") {
         e.preventDefault();
@@ -70,40 +99,41 @@ function enterEditMode() {
         const end = editor.selectionEnd;
         editor.value = editor.value.substring(0, start) + "    " + editor.value.substring(end);
         editor.selectionStart = editor.selectionEnd = start + 4;
+        syncHighlight(editor, highlight);
       }
     });
-    codePanel.appendChild(editor);
+
+    wrapper.appendChild(highlight);
+    wrapper.appendChild(editor);
+    codePanel.appendChild(wrapper);
   }
 
+  const editor = /** @type {HTMLTextAreaElement} */ (document.getElementById("code-editor"));
+  const highlight = document.getElementById("editor-highlight");
+
+  wrapper.style.display = "block";
   editor.value = currentCode;
-  editor.style.display = "block";
+  syncHighlight(editor, highlight);
   editor.focus();
 
   // Update buttons
   editBtn.style.display = "none";
   resetBtn.style.display = "inline-flex";
-  if (playBtn) {
-    playBtn.setAttribute("data-modified", "true");
-  }
 }
 
 /** @param {function} onReset */
 function exitEditMode(onReset) {
   editMode = false;
   const codeTable = document.getElementById("code-table");
-  const editor = document.getElementById("code-editor");
+  const wrapper = document.getElementById("editor-wrapper");
   const editBtn = document.getElementById("edit-btn");
   const resetBtn = document.getElementById("reset-btn");
-  const playBtn = document.getElementById("play-btn");
 
-  if (editor) editor.style.display = "none";
+  if (wrapper) wrapper.style.display = "none";
   codeTable.style.display = "";
 
   editBtn.style.display = "inline-flex";
   resetBtn.style.display = "none";
-  if (playBtn) {
-    playBtn.removeAttribute("data-modified");
-  }
 
   onReset();
 }

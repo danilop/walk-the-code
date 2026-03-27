@@ -64,7 +64,7 @@ code{background:var(--surface);border:1px solid var(--border);border-radius:4px;
 .nav-btn:hover{border-color:var(--accent);color:var(--accent)}
 
 /* --- Lab page --- */
-.lab-header{padding:16px 24px;border-bottom:1px solid var(--border);flex-shrink:0}
+.lab-header{padding:16px 90px 16px 24px;border-bottom:1px solid var(--border);flex-shrink:0}
 .lab-header-top{display:flex;align-items:center;gap:12px}
 .lab-header h1{font-size:1.3rem;font-weight:700;letter-spacing:-.02em;flex:1;min-width:0}
 .lab-header .tagline{color:var(--text-muted);font-size:.85rem;line-height:1.45;margin-top:6px}
@@ -134,7 +134,10 @@ code{background:var(--surface);border:1px solid var(--border);border-radius:4px;
 .edit-btn .icon{color:var(--accent)}
 .reset-btn:hover{border-color:var(--chapter-accent);color:var(--chapter-accent)}
 .reset-btn .icon{color:var(--chapter-accent)}
-.code-editor{display:none;width:100%;height:100%;border:none;background:var(--bg);color:var(--text);font-family:"SF Mono","Fira Code","JetBrains Mono",Consolas,monospace;font-size:13px;line-height:1.65;padding:8px 12px;resize:none;outline:none;tab-size:4;white-space:pre;overflow:auto}
+.editor-wrapper{display:none;position:relative;width:100%;height:100%;overflow:hidden}
+.editor-highlight,.code-editor{position:absolute;top:0;left:0;width:100%;height:100%;margin:0;border:none;padding:8px 12px;font-family:"SF Mono","Fira Code","JetBrains Mono",Consolas,monospace;font-size:13px;line-height:1.65;tab-size:4;white-space:pre;overflow:auto}
+.editor-highlight{background:var(--bg);color:var(--text);pointer-events:none;z-index:0}
+.code-editor{background:transparent;color:transparent;caret-color:var(--text);z-index:1;resize:none;outline:none;-webkit-text-fill-color:transparent}
 .run-hint{display:none;align-items:center;gap:4px;margin-left:auto;font-size:.75rem;color:var(--text-muted);border:1px dashed var(--border);border-radius:6px;padding:4px 10px;cursor:help}
 .play-btn:hover{border-color:#3fb950;color:#3fb950}
 .play-btn .icon{color:#3fb950}
