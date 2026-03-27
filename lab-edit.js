@@ -143,6 +143,17 @@ function enterEditMode() {
   syncLineNumbers(editor, gutter);
   editor.focus();
 
+  // Place cursor at the currently selected line, or top of file
+  const targetLine = state.selectedLine || 1;
+  const lines = currentCode.split("\n");
+  let charPos = 0;
+  for (let i = 0; i < targetLine - 1 && i < lines.length; i++) charPos += lines[i].length + 1;
+  editor.setSelectionRange(charPos, charPos);
+
+  // Scroll to match: measure line height from the gutter, center the target line
+  const lineHeight = gutter.scrollHeight / lines.length;
+  editor.scrollTop = Math.max(0, (targetLine - 1) * lineHeight - editor.clientHeight / 3);
+
   // Update buttons
   editBtn.style.display = "none";
   resetBtn.style.display = "inline-flex";

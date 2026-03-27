@@ -68,9 +68,7 @@ loadData().then(({labs, chapters, config}) => {
   const labDataMap = {}; labs.forEach(l => {
     const desc = stripHtml(l.description || "");
     const objectives = (l.learningObjectives || l.learning_objectives || []).join(" ");
-    let explanations = "";
-    if (l.explanations) { l.explanations.forEach(ex => { explanations += " " + stripHtml(ex.content || ex.text || ""); }); }
-    labDataMap[l.id] = { desc, objectives, explanations };
+    labDataMap[l.id] = { desc, objectives };
   });
   document.getElementById("search-input").addEventListener("input", e => {
     const q = e.target.value.toLowerCase().trim();
@@ -84,10 +82,10 @@ loadData().then(({labs, chapters, config}) => {
       if (titleTagline.includes(q)) { li.style.display = ""; return; }
       const data = labId && labDataMap[labId];
       if (!data) { li.style.display = "none"; return; }
-      const deepText = data.desc + " " + data.objectives + " " + data.explanations;
+      const deepText = data.desc + " " + data.objectives;
       if (!deepText.toLowerCase().includes(q)) { li.style.display = "none"; return; }
       li.style.display = "";
-      const ctx = findContext(data.desc, q) || findContext(data.objectives, q) || findContext(data.explanations, q);
+      const ctx = findContext(data.desc, q) || findContext(data.objectives, q);
       if (ctx) {
         const ctxEl = document.createElement("div"); ctxEl.className = "lab-match-context"; ctxEl.innerHTML = ctx;
         const wrapper = li.querySelector("a > div");
