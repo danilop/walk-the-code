@@ -94,6 +94,8 @@ class WTCHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         if self.path.startswith("/api/run-modified/"):
             self._run_modified_lab(self.path[len("/api/run-modified/"):])
+        elif self.path.startswith("/api/stop/"):
+            self._stop_lab(self.path[len("/api/stop/"):])
         else:
             self.send_error(404)
 

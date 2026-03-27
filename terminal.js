@@ -46,6 +46,13 @@ export function initTerminal(labId, serverMode, options) {
   document.getElementById("terminal-close").onclick = closeTerminal;
   document.getElementById("terminal-maximize").onclick = toggleSize;
 
+  // Kill running process when user navigates away
+  window.addEventListener("beforeunload", () => {
+    if (labRunning && currentLabId) {
+      navigator.sendBeacon(`/api/stop/${currentLabId}`);
+    }
+  });
+
   // Scroll-to-bottom button
   const output = document.getElementById("terminal-output");
   let scrollBtn = document.getElementById("terminal-scroll-bottom");
