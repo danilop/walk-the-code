@@ -1,4 +1,5 @@
 {
+  "$schema": "../config.schema.json",
   "title": "Monte Carlo Pi",
   "tagline": "Estimate Pi by throwing random darts — in Python and Java.",
   "code_dir": "samples",

@@ -55,16 +55,49 @@ loadData().then(({labs, chapters, config}) => {
     labs.forEach((l,i) => { ul.innerHTML += `<li class="lab-item"><a href="lab.html?lab=${l.id}"><span class="lab-num">${String(i+1).padStart(2,"0")}</span><div><div class="lab-title-text">${l.title}</div><div class="lab-tagline">${l.tagline||""}</div></div></a></li>`; });
     el.appendChild(ul);
   }
+  window.WTCSite.addProgressBadges(labs);
+  function stripHtml(s) { const d = document.createElement("div"); d.innerHTML = s; return d.textContent || ""; }
+  function findContext(text, q) {
+    const i = text.toLowerCase().indexOf(q);
+    if (i === -1) return null;
+    const start = Math.max(0, i - 40), end = Math.min(text.length, i + q.length + 40);
+    let snippet = (start > 0 ? "..." : "") + text.slice(start, end) + (end < text.length ? "..." : "");
+    const re = new RegExp("(" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi");
+    return snippet.replace(re, "<mark>$1</mark>");
+  }
+  const labDataMap = {}; labs.forEach(l => {
+    const desc = stripHtml(l.description || "");
+    const objectives = (l.learningObjectives || l.learning_objectives || []).join(" ");
+    let explanations = "";
+    if (l.explanations) { l.explanations.forEach(ex => { explanations += " " + stripHtml(ex.content || ex.text || ""); }); }
+    labDataMap[l.id] = { desc, objectives, explanations };
+  });
   document.getElementById("search-input").addEventListener("input", e => {
     const q = e.target.value.toLowerCase().trim();
     document.querySelectorAll(".lab-item").forEach(li => {
-      const text = li.textContent.toLowerCase();
-      li.style.display = !q || text.includes(q) ? "" : "none";
+      const link = li.querySelector("a");
+      const labId = link ? new URLSearchParams(link.href.split("?")[1]).get("lab") : null;
+      const titleTagline = li.textContent.toLowerCase();
+      let oldCtx = li.querySelector(".lab-match-context");
+      if (oldCtx) oldCtx.remove();
+      if (!q || q.length < 3) { li.style.display = ""; return; }
+      if (titleTagline.includes(q)) { li.style.display = ""; return; }
+      const data = labId && labDataMap[labId];
+      if (!data) { li.style.display = "none"; return; }
+      const deepText = data.desc + " " + data.objectives + " " + data.explanations;
+      if (!deepText.toLowerCase().includes(q)) { li.style.display = "none"; return; }
+      li.style.display = "";
+      const ctx = findContext(data.desc, q) || findContext(data.objectives, q) || findContext(data.explanations, q);
+      if (ctx) {
+        const ctxEl = document.createElement("div"); ctxEl.className = "lab-match-context"; ctxEl.innerHTML = ctx;
+        const wrapper = li.querySelector("a > div");
+        if (wrapper) wrapper.appendChild(ctxEl);
+      }
     });
     document.querySelectorAll(".chapter").forEach(ch => {
       const visible = ch.querySelectorAll(".lab-item:not([style*='display: none'])").length;
-      ch.style.display = !q || visible > 0 ? "" : "none";
-      if (q && visible > 0) { ch.querySelector(".chapter-header").classList.add("open"); ch.querySelector(".chapter-labs").classList.add("open"); }
+      ch.style.display = !q || q.length < 3 || visible > 0 ? "" : "none";
+      if (q && q.length >= 3 && visible > 0) { ch.querySelector(".chapter-header").classList.add("open"); ch.querySelector(".chapter-labs").classList.add("open"); }
     });
   });
 });

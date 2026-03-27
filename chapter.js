@@ -64,6 +64,100 @@ const chapterId = new URLSearchParams(location.search).get("chapter");
     ul.innerHTML += `<li class="lab-item"><a href="lab.html?lab=${l.id}"><span class="lab-num">${String(l.idx+1).padStart(2,"0")}</span><div><div class="lab-title-text">${l.title}</div><div class="lab-tagline">${l.tagline||""}</div></div></a></li>`;
   });
 
+  window.WTCSite.addProgressBadges(labs);
+
+  // --- Knowledge Checks ---
+  if (ch.knowledge_checks && ch.knowledge_checks.length > 0) {
+    const storageKey = `wtc-quiz-${chapterId}`;
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch(e) {}
+
+    const container = document.getElementById("knowledge-checks");
+    const section = document.createElement("div");
+    section.className = "knowledge-checks";
+    section.innerHTML = `<h2>Knowledge Check</h2>`;
+
+    ch.knowledge_checks.forEach((check, qi) => {
+      const card = document.createElement("div");
+      card.className = "quiz-card";
+      const qKey = `q${qi}`;
+      const answered = saved[qKey] !== undefined;
+
+      let optionsHtml = "";
+      check.options.forEach((opt, oi) => {
+        let cls = "quiz-option";
+        if (answered) {
+          cls += " answered";
+          if (oi === check.correct) cls += " correct";
+          if (oi === saved[qKey] && oi !== check.correct) cls += " incorrect";
+          if (oi === saved[qKey]) cls += " selected";
+        }
+        optionsHtml += `<li class="${cls}" data-qi="${qi}" data-oi="${oi}"><input type="radio" name="quiz-${qi}" ${answered ? "disabled" : ""} ${answered && oi === saved[qKey] ? "checked" : ""}><span>${opt}</span></li>`;
+      });
+
+      card.innerHTML = `
+        <div class="quiz-question">${qi + 1}. ${check.question}</div>
+        <ul class="quiz-options">${optionsHtml}</ul>
+        <div class="quiz-explanation${answered ? " visible" : ""}">${check.explanation}</div>
+      `;
+      section.appendChild(card);
+    });
+
+    // Score display
+    const scoreDiv = document.createElement("div");
+    scoreDiv.className = "quiz-score";
+    const updateScore = () => {
+      const total = ch.knowledge_checks.length;
+      const answeredCount = Object.keys(saved).length;
+      const correctCount = Object.values(saved).filter((v, i) => {
+        const idx = parseInt(Object.keys(saved).find(k => saved[k] === v && k === `q${i}`) || "-1");
+        return false;
+      }).length;
+      let correct = 0;
+      for (const [k, v] of Object.entries(saved)) {
+        const qi = parseInt(k.replace("q", ""));
+        if (ch.knowledge_checks[qi] && v === ch.knowledge_checks[qi].correct) correct++;
+      }
+      if (answeredCount > 0) {
+        scoreDiv.textContent = `${correct}/${answeredCount} correct${answeredCount < total ? ` (${total - answeredCount} remaining)` : ""}`;
+      }
+    };
+    updateScore();
+    section.appendChild(scoreDiv);
+
+    // Click handler for options
+    section.addEventListener("click", (e) => {
+      const option = e.target.closest(".quiz-option");
+      if (!option || option.classList.contains("answered")) return;
+      const qi = parseInt(option.dataset.qi);
+      const oi = parseInt(option.dataset.oi);
+      const check = ch.knowledge_checks[qi];
+      const qKey = `q${qi}`;
+
+      // Save answer
+      saved[qKey] = oi;
+      try { localStorage.setItem(storageKey, JSON.stringify(saved)); } catch(e) {}
+
+      // Update all options in this question
+      const card = option.closest(".quiz-card");
+      card.querySelectorAll(".quiz-option").forEach((opt) => {
+        const optOi = parseInt(opt.dataset.oi);
+        opt.classList.add("answered");
+        if (optOi === check.correct) opt.classList.add("correct");
+        if (optOi === oi && optOi !== check.correct) opt.classList.add("incorrect");
+        if (optOi === oi) opt.classList.add("selected");
+        opt.querySelector("input").disabled = true;
+        if (optOi === oi) opt.querySelector("input").checked = true;
+      });
+
+      // Show explanation
+      card.querySelector(".quiz-explanation").classList.add("visible");
+      updateScore();
+    });
+
+    container.appendChild(section);
+  }
+
   const nav = document.getElementById("nav-row");
   if (ci > 0) nav.innerHTML += `<a class="nav-btn" href="chapter.html?chapter=${chapters[ci-1].id}">&larr; ${chapters[ci-1].title}</a>`;
   if (ci < chapters.length-1) nav.innerHTML += `<a class="nav-btn" href="chapter.html?chapter=${chapters[ci+1].id}">${chapters[ci+1].title} &rarr;</a>`;

@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/danilop/walk-the-code/config.schema.json",
+  "title": "Walk the Code Configuration",
+  "description": "Schema for walk-the-code config.json — defines project metadata, chapter structure, lab definitions, and optional run commands for an interactive line-by-line code tutorial.",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Project title shown on the index page."
+    },
+    "tagline": {
+      "type": "string",
+      "description": "Subtitle shown below the title on the index page."
+    },
+    "repo_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Repository URL used for the GitHub corner link on tutorial pages."
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "python",
+        "javascript",
+        "typescript",
+        "c",
+        "cpp",
+        "rust",
+        "go",
+        "java"
+      ],
+      "description": "Default programming language for all labs. Auto-detected from file extension if omitted."
+    },
+    "code_dir": {
+      "type": "string",
+      "default": ".",
+      "description": "Path to the code directory, relative to config.json. Defaults to the current directory."
+    },
+    "chapters": {
+      "type": "array",
+      "description": "Array of chapter objects that group labs into themed sections, each with its own page, description, and optional diagram.",
+      "items": {
+        "$ref": "#/$defs/chapter"
+      }
+    },
+    "labs": {
+      "type": "array",
+      "description": "Array of lab objects defining individual code tutorials.",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/lab"
+      }
+    }
+  },
+  "required": ["labs"],
+  "additionalProperties": false,
+  "$defs": {
+    "chapter": {
+      "type": "object",
+      "description": "A chapter groups labs into a themed section with its own page, description, and optional diagram.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique chapter identifier."
+        },
+        "title": {
+          "type": "string",
+          "description": "Chapter title displayed on the chapter page and in navigation."
+        },
+        "description": {
+          "type": "string",
+          "description": "HTML description shown on the chapter page."
+        },
+        "diagram": {
+          "type": "string",
+          "description": "Inline Mermaid source rendered on the chapter page (raw Mermaid markup, not a file reference)."
+        },
+        "comparison_diagram": {
+          "type": "string",
+          "description": "References a .mmd file in the diagrams/ directory, shown as a comparison diagram on the chapter page."
+        },
+        "labs": {
+          "type": "array",
+          "description": "Ordered list of lab IDs belonging to this chapter.",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["id", "title", "labs"],
+      "additionalProperties": false
+    },
+    "lab": {
+      "type": "object",
+      "description": "A lab defines a single code file tutorial with metadata, optional run command, learning objectives, and exercises.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$",
+          "description": "Unique lab identifier. Must be a valid identifier (letters, digits, underscores, and hyphens; must start with a letter or underscore). Matches a subdirectory in code_dir."
+        },
+        "file": {
+          "type": "string",
+          "description": "Source file to display in the tutorial viewer."
+        },
+        "title": {
+          "type": "string",
+          "description": "Lab title displayed in navigation and on the lab page."
+        },
+        "tagline": {
+          "type": "string",
+          "description": "One-line summary shown on index and chapter pages."
+        },
+        "description": {
+          "type": "string",
+          "description": "HTML overview shown in the explanation panel before any line is selected."
+        },
+        "language": {
+          "type": "string",
+          "enum": [
+            "python",
+            "javascript",
+            "typescript",
+            "c",
+            "cpp",
+            "rust",
+            "go",
+            "java"
+          ],
+          "description": "Override the default language for this lab. Auto-detected from file extension if omitted."
+        },
+        "run_command": {
+          "type": "array",
+          "description": "Command to execute the lab, specified as an array of strings. Enables the Run button in local server mode. Use [\"sh\", \"-c\", \"...\"] for compile-then-run languages.",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "learning_objectives": {
+          "type": "array",
+          "description": "Array of strings describing what the learner will be able to do after completing this lab.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exercises": {
+          "type": "array",
+          "description": "Array of exercise objects displayed in the lab overview panel with completion checkboxes (persisted per-browser in localStorage).",
+          "items": {
+            "$ref": "#/$defs/exercise"
+          }
+        }
+      },
+      "required": ["id", "file", "title"],
+      "additionalProperties": false
+    },
+    "exercise": {
+      "type": "object",
+      "description": "An exercise prompts the learner to modify or experiment with the code.",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "The exercise instruction or question presented to the learner."
+        },
+        "hint": {
+          "type": "string",
+          "description": "Optional hint to help the learner complete the exercise."
+        }
+      },
+      "required": ["prompt"],
+      "additionalProperties": false
+    }
+  }
+}

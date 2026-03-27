@@ -1,10 +1,14 @@
+// @ts-check
 window.WTCSite = (() => {
+  /** @type {SiteConfig|null} */
   let cachedConfig = null;
 
+  /** @param {SiteConfig} config @returns {string} */
   function siteTitle(config) {
     return config?.title || "walk-the-code";
   }
 
+  /** @returns {Promise<SiteConfig>} */
   async function loadConfig() {
     if (cachedConfig) return cachedConfig;
     try {
@@ -25,6 +29,7 @@ window.WTCSite = (() => {
     }
   }
 
+  /** @param {SiteConfig} config */
   function renderGitHubCorner(config) {
     const repoUrl = config?.repo_url;
     const existing = document.getElementById("github-corner");
@@ -44,9 +49,54 @@ window.WTCSite = (() => {
     document.body.prepend(link);
   }
 
+  /** @param {string} pageTitle @param {SiteConfig} config */
   function setDocumentTitle(pageTitle, config) {
     document.title = pageTitle ? `${pageTitle} — ${siteTitle(config)}` : siteTitle(config);
   }
 
-  return { loadConfig, renderGitHubCorner, setDocumentTitle, siteTitle };
+  /** @param {Lab[]} labs */
+  function addProgressBadges(labs) {
+    const labAnnotations = {};
+    if (Array.isArray(labs)) {
+      labs.forEach(l => { if (l.annotated_lines) labAnnotations[l.id] = l.annotated_lines; });
+    }
+    document.querySelectorAll(".lab-item").forEach(li => {
+      const a = li.querySelector("a");
+      if (!a) return;
+      const u = new URL(a.href, location.href);
+      const labId = u.searchParams.get("lab");
+      if (!labId) return;
+      const visited = localStorage.getItem(`wtc-visited-${labId}`);
+      const exercises = localStorage.getItem(`wtc-exercises-${labId}`);
+      if (!visited && !exercises) return;
+      let visitedCount = 0;
+      if (visited) {
+        try { const v = JSON.parse(visited); visitedCount = Array.isArray(v) ? v.length : Object.keys(v).length; } catch(e) {}
+      }
+      if (visitedCount === 0 && !exercises) return;
+      const total = labAnnotations[labId] || 0;
+      const pct = total > 0 ? Math.min(100, Math.round((visitedCount / total) * 100)) : 0;
+      const parts = [];
+      if (total > 0 && pct > 0) {
+        parts.push(`<div class="lab-progress-bar"><div class="lab-progress-fill" style="width:${pct}%"></div></div><span>${pct}%</span>`);
+      } else if (visitedCount > 0) {
+        parts.push(`<span>In progress</span>`);
+      }
+      if (exercises) {
+        try {
+          const ex = JSON.parse(exercises);
+          const done = Array.isArray(ex) ? ex.filter(Boolean).length : Object.values(ex).filter(Boolean).length;
+          if (done > 0) parts.push(`<span>${done} exercise${done !== 1 ? "s" : ""} done</span>`);
+        } catch(e) {}
+      }
+      if (parts.length === 0) return;
+      const badge = document.createElement("div");
+      badge.className = "lab-progress";
+      badge.innerHTML = parts.join("");
+      const div = a.querySelector("div");
+      if (div) div.appendChild(badge);
+    });
+  }
+
+  return { loadConfig, renderGitHubCorner, setDocumentTitle, siteTitle, addProgressBadges };
 })();

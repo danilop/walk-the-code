@@ -23,17 +23,27 @@
   <div class="lab-header-top">
     <a href="/" class="back-link" id="back-link">&larr; Labs</a>
     <h1 id="lab-title"></h1>
+    <button class="edit-btn" id="edit-btn"><span class="icon">&#9998;</span> Edit</button>
+    <button class="reset-btn" id="reset-btn"><span class="icon">&#8634;</span> Reset</button>
     <button class="play-btn" id="play-btn"><span class="icon">&#9654;</span> Run</button>
     <button class="stop-btn" id="stop-btn"><span class="icon">&#9632;</span> Stop</button>
     <span class="run-hint" id="run-hint" title="Install locally to run labs: uv tool install walk-the-code">Clone repo to run</span>
   </div>
   <div class="tagline" id="lab-tagline" style="color:var(--text-muted);font-size:.85rem;margin-top:6px"></div>
+  <div class="progress-bar" id="progress-bar">
+    <div class="progress-fill" id="progress-fill"></div>
+    <span class="progress-text" id="progress-text"></span>
+  </div>
 </div>
 <div class="lab-main">
   <div class="code-panel" id="code-panel"><table class="code-table" id="code-table"></table></div>
   <div class="h-resize" id="h-resize"></div>
   <button class="explain-toggle" id="explain-toggle">Explanation</button>
   <div class="explain-panel" id="explain-panel">
+    <div class="explain-search">
+      <input type="text" class="search-input" id="explain-search" placeholder="Search explanations..." autocomplete="off">
+      <div class="search-results" id="search-results"></div>
+    </div>
     <div id="explain-overview"></div>
     <div id="explain-line" style="display:none">
       <div class="explain-line-ref"><span id="explain-ref"></span><button class="overview-btn" id="overview-btn">← Overview</button></div>

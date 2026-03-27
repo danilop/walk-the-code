@@ -1,6 +1,36 @@
+// @ts-check
+// @ts-ignore — CDN ESM import has no type declarations
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
 import { initTerminal } from './terminal.js';
 
+import { state, labId, lineHash } from './lab-state.js';
+import { loadServerData, loadStaticData } from './lab-data.js';
+import {
+  renderCode, buildAnnotatedLines, buildNav, selectLine,
+  showOverview, updateProgress, setMermaidRef,
+} from './lab-render.js';
+import { initSearch } from './lab-search.js';
+import { initEditMode, showEditControls, getEditorCode } from './lab-edit.js';
+
+// --- Global error handlers ---
+/** @param {string} msg */
+function showErrorBanner(msg) {
+  let banner = document.querySelector('.error-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.className = 'error-banner';
+    document.body.appendChild(banner);
+  }
+  banner.innerHTML = `<span>\u26a0 ${msg}</span><button onclick="this.parentElement.remove()">Dismiss</button>`;
+}
+window.addEventListener('error', (e) => {
+  showErrorBanner(`Unexpected error: ${e.message || 'Unknown error'}`);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  showErrorBanner(`Unhandled promise error: ${e.reason?.message || e.reason || 'Unknown error'}`);
+});
+
+// --- Mermaid initialization ---
 mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables: {
   primaryColor:'#1f3c5e',primaryBorderColor:'#58a6ff',primaryTextColor:'#e6edf3',
   secondaryColor:'#1e3a3e',secondaryBorderColor:'#4d9375',secondaryTextColor:'#e6edf3',
@@ -10,194 +40,86 @@ mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables: {
   edgeLabelBackground:'#161b22',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',fontSize:'14px'
 }});
 
-const labId = new URLSearchParams(location.search).get("lab");
-let explanations={}, codeLines=[], selectedLine=null, staleLines=new Set();
-let serverMode=false, labLanguage="python", annotatedLines=[], diagrams={};
-let allLabs=[], allChapters=[], labDescription="";
-
-const COMMENT_RE = {
-  python:/^\s*(#|"""|''')/,javascript:/^\s*\/\//,typescript:/^\s*\/\//,
-  c:/^\s*\/\//,cpp:/^\s*\/\//,rust:/^\s*\/\//,go:/^\s*\/\//,java:/^\s*\/\//,
-};
-
-async function lineHash(text) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text.trim()));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,8);
-}
+// Pass mermaid reference to the render module for showExplanation
+setMermaidRef(mermaid);
 
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 
-// --- Data loading ---
-async function loadServerData() {
-  const [r, config] = await Promise.all([fetch("/api/labs"), window.WTCSite.loadConfig()]);
-  if (!r.ok) return null;
-  serverMode = true;
-  window.WTCSite.renderGitHubCorner(config);
-  allLabs = await r.json();
-  const labMeta = allLabs.find(l=>l.id===labId);
-  const [expData, codeRes] = await Promise.all([
-    fetch(`/api/explanations/${labId}`).then(r=>r.json()),
-    fetch(`/api/code/${labId}`).then(r=>r.json()),
-  ]);
-  labLanguage = codeRes.language || labMeta?.language || "python";
-  labDescription = labMeta?.description || "";
-  const dIds = new Set(Object.values(expData).map(e=>typeof e==="object"?e.diagram:null).filter(Boolean));
-  await Promise.all([...dIds].map(async id=>{
-    try{const r=await fetch(`/api/diagrams/${id}`);if(r.ok){diagrams[id]=(await r.json()).source;}}catch(e){}
-  }));
-  try{const cr=await fetch("/api/chapters");if(cr.ok)allChapters=await cr.json();}catch(e){}
-  return {labMeta, codeText:codeRes.code, expData};
-}
+// --- showOverview on window (used by HTML onclick) ---
+window.showOverview = showOverview;
+document.getElementById("overview-btn").onclick = showOverview;
 
-async function loadStaticData() {
-  const d = await (await fetch("data/labs.json")).json();
-  window.WTCSite.renderGitHubCorner(d.config || {});
-  allLabs = d.labs||d; allChapters = d.chapters||[];
-  const lab = allLabs.find(l=>l.id===labId);
-  if (!lab) return null;
-  labLanguage = lab.language||"python";
-  labDescription = lab.description||"";
-  if (d.diagrams) diagrams = d.diagrams;
-  document.getElementById("back-link").href = "index.html";
-  return {labMeta:lab, codeText:lab.code, expData:lab.explanations};
-}
-
-// --- Rendering ---
-function isComment(line) { return (COMMENT_RE[labLanguage]||COMMENT_RE.python).test(line); }
-
-function buildAnnotatedLines() { annotatedLines = Object.keys(explanations).map(Number).sort((a,b)=>a-b); }
-
-function ownerOf(lineNum) {
-  if (annotatedLines.includes(lineNum)) return lineNum;
-  const trimmed = (codeLines[lineNum-1]||"").trim();
-  if (trimmed && !isComment(trimmed)) return lineNum;
-  for (const al of annotatedLines) if (al>lineNum) return al;
-  for (let i=annotatedLines.length-1;i>=0;i--) if (annotatedLines[i]<lineNum) return annotatedLines[i];
-  return annotatedLines[0]||1;
-}
-
-function renderCode(code) {
-  const hl = hljs.highlight(code,{language:labLanguage,ignoreIllegals:true}).value;
-  const table = document.getElementById("code-table");
-  hl.split("\n").forEach((html,i)=>{
-    const ln=i+1, tr=document.createElement("tr"); tr.className="code-line";
-    if(staleLines.has(ln)) tr.classList.add("stale");
-    tr.dataset.line=ln;
-    tr.innerHTML=`<td class="line-num">${ln}</td><td class="line-content">${html||" "}</td>`;
-    tr.addEventListener("click",()=>selectLine(ownerOf(ln)));
-    table.appendChild(tr);
-  });
-}
-
-function highlightContext(lineNum) {
-  let i=lineNum-2;
-  while(i>=0){
-    const t=codeLines[i].trim();
-    if(isComment(t)||t===""){if(isComment(t)){const r=document.querySelector(`.code-line[data-line="${i+1}"]`);if(r)r.classList.add("context");}i--;}else break;
-  }
-}
-
-function getExp(key,field) { const e=explanations[key]; if(!e)return null; return typeof e==="object"?e[field]||null:(field==="text"?e:null); }
-
-let diagramCounter=0;
-async function showExplanation(lineNum) {
-  document.getElementById("explain-overview").style.display="none";
-  document.getElementById("explain-line").style.display="block";
-  document.getElementById("explain-ref").textContent=`Line ${lineNum}`;
-  const key=String(lineNum), text=document.getElementById("explain-text"), diagEl=document.getElementById("diagram-container");
-  const expText=getExp(key,"text");
-  if(expText){
-    let html=expText;
-    if(staleLines.has(lineNum)) html+=`<div class="stale-warning"><span class="stale-dot"></span>Code changed since this annotation was written</div>`;
-    text.innerHTML=html;
-  } else {
-    const t=(codeLines[lineNum-1]||"").trim();
-    text.innerHTML=`<span style="color:var(--text-muted)">${!t?"Empty line":isComment(t)?"Comment line":"No annotation for this line."}</span>`;
-  }
-  const diagId=getExp(key,"diagram");
-  if(diagId&&diagrams[diagId]){
-    diagEl.classList.remove("hidden");
-    let src=diagrams[diagId];
-    const hl=getExp(key,"highlight");
-    if(hl&&hl.length) src+=`\nclassDef wtcHighlight fill:#f96,stroke:#333,stroke-width:2px\nclass ${hl.join(",")} wtcHighlight`;
-    try{const{svg}=await mermaid.render(`wtc-d-${++diagramCounter}`,src);diagEl.innerHTML=svg;}
-    catch(e){diagEl.innerHTML='<span style="color:var(--text-muted)">Diagram error</span>';}
-  } else { diagEl.classList.add("hidden"); diagEl.innerHTML=""; }
-}
-
-function selectLine(lineNum) {
-  document.querySelectorAll(".code-line.selected,.code-line.context").forEach(el=>el.classList.remove("selected","context"));
-  selectedLine=lineNum;
-  const row=document.querySelector(`.code-line[data-line="${lineNum}"]`);
-  if(row){row.classList.add("selected");highlightContext(lineNum);(document.querySelector(".code-line.context")||row).scrollIntoView({block:"center",behavior:"smooth"});}
-  showExplanation(lineNum);
-}
-
-window.showOverview = function() {
-  selectedLine=null;
-  document.querySelectorAll(".code-line.selected,.code-line.context").forEach(el=>el.classList.remove("selected","context"));
-  document.getElementById("explain-line").style.display="none";
-  const ov=document.getElementById("explain-overview"); ov.style.display="block";
-  if(labDescription) ov.innerHTML=`<div class="lab-desc">${labDescription}</div>`;
-  else ov.innerHTML='<div style="color:var(--text-muted);margin-top:40px;text-align:center">Click a line to see its explanation</div>';
-};
-document.getElementById("overview-btn").onclick = window.showOverview;
-
-function buildNav() {
-  const nav=document.getElementById("nav-footer"), idx=allLabs.findIndex(l=>l.id===labId);
-  if(idx<0) return;
-  // Find chapter for this lab
-  const ch=allChapters.find(c=>(c.labs||[]).includes(labId));
-  if(ch) nav.innerHTML+=`<a class="nav-link chapter" href="chapter.html?chapter=${ch.id}">${ch.title}</a>`;
-  if(idx>0) nav.innerHTML+=`<a class="nav-link" href="lab.html?lab=${allLabs[idx-1].id}">&larr; ${allLabs[idx-1].title}</a>`;
-  if(idx<allLabs.length-1) nav.innerHTML+=`<a class="nav-link" href="lab.html?lab=${allLabs[idx+1].id}">${allLabs[idx+1].title} &rarr;</a>`;
-}
+// --- Search ---
+initSearch();
 
 // --- Keyboard nav ---
-document.addEventListener("keydown",e=>{
-  if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){e.preventDefault();const btn=document.getElementById("play-btn");if(btn&&btn.style.display!=="none")btn.click();return;}
-  if(!annotatedLines.length) return;
-  if(e.key==="Escape"){ e.preventDefault(); window.showOverview(); return; }
-  if(selectedLine===null && (e.key==="ArrowDown"||e.key==="j")){ e.preventDefault(); selectLine(annotatedLines[0]); return; }
-  if(selectedLine===null) return;
-  const idx=annotatedLines.indexOf(selectedLine);
-  if(e.key==="ArrowDown"||e.key==="j"){e.preventDefault();const n=idx>=0?idx+1:annotatedLines.findIndex(l=>l>selectedLine);if(n>=0&&n<annotatedLines.length)selectLine(annotatedLines[n]);}
-  else if(e.key==="ArrowUp"||e.key==="k"){e.preventDefault();const p=idx>0?idx-1:annotatedLines.filter(l=>l<selectedLine).length-1;if(p>=0)selectLine(annotatedLines[p]);}
+document.addEventListener("keydown", e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); const btn = document.getElementById("play-btn"); if (btn && btn.style.display !== "none") btn.click(); return; }
+  if (!state.annotatedLines.length) return;
+  if (e.key === "Escape") { e.preventDefault(); showOverview(); return; }
+  if (state.selectedLine === null && (e.key === "ArrowDown" || e.key === "j")) { e.preventDefault(); selectLine(state.annotatedLines[0]); return; }
+  if (state.selectedLine === null) return;
+  const idx = state.annotatedLines.indexOf(state.selectedLine);
+  if (e.key === "ArrowDown" || e.key === "j") { e.preventDefault(); const n = idx >= 0 ? idx + 1 : state.annotatedLines.findIndex(l => l > state.selectedLine); if (n >= 0 && n < state.annotatedLines.length) selectLine(state.annotatedLines[n]); }
+  else if (e.key === "ArrowUp" || e.key === "k") { e.preventDefault(); const p = idx > 0 ? idx - 1 : state.annotatedLines.filter(l => l < state.selectedLine).length - 1; if (p >= 0) selectLine(state.annotatedLines[p]); }
 });
 
 // --- Resize handles ---
-(function(){
-  const h=document.getElementById("h-resize"),ep=document.getElementById("explain-panel"),main=document.querySelector(".lab-main");
-  let startX,startW;
-  h.addEventListener("mousedown",e=>{e.preventDefault();startX=e.clientX;startW=ep.offsetWidth;h.classList.add("dragging");document.addEventListener("mousemove",drag);document.addEventListener("mouseup",up);});
-  function drag(e){ep.style.width=Math.max(200,Math.min(main.offsetWidth*0.7,startW-(e.clientX-startX)))+"px";}
-  function up(){h.classList.remove("dragging");document.removeEventListener("mousemove",drag);document.removeEventListener("mouseup",up);}
+(function () {
+  const h = document.getElementById("h-resize"), ep = document.getElementById("explain-panel"), main = document.querySelector(".lab-main");
+  let startX, startW;
+  h.addEventListener("mousedown", e => { e.preventDefault(); startX = e.clientX; startW = ep.offsetWidth; h.classList.add("dragging"); document.addEventListener("mousemove", drag); document.addEventListener("mouseup", up); });
+  function drag(e) { ep.style.width = Math.max(200, Math.min(main.offsetWidth * 0.7, startW - (e.clientX - startX))) + "px"; }
+  function up() { h.classList.remove("dragging"); document.removeEventListener("mousemove", drag); document.removeEventListener("mouseup", up); }
 })();
 
 // --- Init ---
-(async()=>{
-  let data;
-  try { data = await loadServerData(); } catch(e) {}
-  if (!data) data = await loadStaticData();
-  if (!data) { document.body.textContent="Lab not found"; return; }
+(async () => {
+  let data, serverError = null, staticError = null;
+  try { data = await loadServerData(); } catch (e) { serverError = e; }
+  if (!data) { try { data = await loadStaticData(); } catch (e) { staticError = e; } }
+  if (!data) {
+    const isNetwork = serverError && (serverError.message?.includes('fetch') || serverError.message?.includes('network') || serverError instanceof TypeError);
+    const msg = isNetwork
+      ? 'Unable to connect to the server. Please check your network connection and try again.'
+      : (serverError || staticError)
+        ? `Failed to load lab data: ${(staticError || serverError).message || 'Unknown error'}`
+        : 'Lab not found. The requested lab does not exist.';
+    document.body.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-muted)"><h2 style="margin-bottom:12px;color:var(--text)">${isNetwork ? 'Connection Error' : 'Lab Not Found'}</h2><p>${msg}</p><a href="${state.serverMode ? '/' : 'index.html'}" style="display:inline-block;margin-top:16px;color:var(--accent)">Back to labs</a></div>`;
+    return;
+  }
 
-  const {labMeta, codeText, expData} = data;
-  if(serverMode) document.getElementById("play-btn").style.display="inline-flex";
-  else { const hint=document.getElementById("run-hint"); if(hint) hint.style.display="inline-flex"; }
-  if(labMeta){
-    document.getElementById("lab-title").textContent=labMeta.title;
-    document.getElementById("lab-tagline").textContent=labMeta.tagline||"";
+  const { labMeta, codeText, expData } = data;
+  if (state.serverMode) {
+    document.getElementById("play-btn").style.display = "inline-flex";
+    showEditControls();
+  } else {
+    const hint = document.getElementById("run-hint"); if (hint) hint.style.display = "inline-flex";
+  }
+  if (labMeta) {
+    document.getElementById("lab-title").textContent = labMeta.title;
+    document.getElementById("lab-tagline").textContent = labMeta.tagline || "";
     window.WTCSite.setDocumentTitle(labMeta.title, await window.WTCSite.loadConfig());
   }
-  explanations=expData||{}; codeLines=codeText.split("\n");
-  for(const[ln,entry]of Object.entries(explanations)){
-    if(typeof entry==="object"&&entry.hash){const i=parseInt(ln)-1;if(i>=0&&i<codeLines.length&&(await lineHash(codeLines[i]))!==entry.hash)staleLines.add(parseInt(ln));}
+  state.explanations = expData || {};
+  state.codeLines = codeText.split("\n");
+  for (const [ln, entry] of Object.entries(state.explanations)) {
+    if (typeof entry === "object" && entry.hash) {
+      const i = parseInt(ln) - 1;
+      if (i >= 0 && i < state.codeLines.length && (await lineHash(state.codeLines[i])) !== entry.hash) state.staleLines.add(parseInt(ln));
+    }
   }
-  renderCode(codeText); buildAnnotatedLines(); buildNav();
-  document.getElementById("code-panel").scrollTop=0;
-  window.showOverview();
-  if(staleLines.size>0){const t=document.createElement("span");t.className="stale-warning";t.innerHTML=`<span class="stale-dot"></span>${staleLines.size} annotation${staleLines.size>1?"s":""} may be outdated`;document.querySelector(".lab-header").appendChild(t);}
-  initTerminal(labId, serverMode);
-  const expToggle=document.getElementById("explain-toggle");
-  if(expToggle) expToggle.onclick=()=>{document.getElementById("explain-panel").classList.toggle("mobile-hidden");expToggle.classList.toggle("collapsed");};
+  renderCode(codeText);
+  buildAnnotatedLines();
+  buildNav();
+  try { const savedEx = localStorage.getItem(`wtc-exercises-${labId}`); if (savedEx) state.completedExercises = new Set(JSON.parse(savedEx)); } catch (e) { /* ignore */ }
+  try { const saved = localStorage.getItem(`wtc-visited-${labId}`); if (saved) { state.visitedLines = new Set(JSON.parse(saved)); state.visitedLines.forEach(ln => { const r = document.querySelector(`.code-line[data-line="${ln}"]`); if (r) r.classList.add("visited"); }); } } catch (e) { /* ignore */ }
+  updateProgress();
+  document.getElementById("code-panel").scrollTop = 0;
+  showOverview();
+  if (state.staleLines.size > 0) { const t = document.createElement("span"); t.className = "stale-warning"; t.innerHTML = `<span class="stale-dot"></span>${state.staleLines.size} annotation${state.staleLines.size > 1 ? "s" : ""} may be outdated`; document.querySelector(".lab-header").appendChild(t); }
+  initEditMode(codeText, () => showOverview());
+  initTerminal(labId, state.serverMode, { getModifiedCode: getEditorCode });
+  const expToggle = document.getElementById("explain-toggle");
+  if (expToggle) expToggle.onclick = () => { document.getElementById("explain-panel").classList.toggle("mobile-hidden"); expToggle.classList.toggle("collapsed"); };
 })();

@@ -10,6 +10,8 @@ dependencies = []
 walk-the-code = "walk_the_code.cli:serve"
 wtc-serve = "walk_the_code.cli:serve"
 wtc-build = "walk_the_code.cli:build"
+wtc-init = "walk_the_code.cli:init"
+wtc-validate = "walk_the_code.cli:validate"
 
 [build-system]
 requires = ["hatchling"]
