@@ -54,6 +54,9 @@ initSearch();
 
 // --- Keyboard nav ---
 document.addEventListener("keydown", e => {
+  // Don't intercept keys when typing in an input, textarea, or contenteditable
+  const tag = /** @type {HTMLElement} */ (e.target).tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || /** @type {HTMLElement} */ (e.target).isContentEditable) return;
   if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); const btn = document.getElementById("play-btn"); if (btn && btn.style.display !== "none") btn.click(); return; }
   if (!state.annotatedLines.length) return;
   if (e.key === "Escape") { e.preventDefault(); showOverview(); return; }
