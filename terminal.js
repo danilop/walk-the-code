@@ -7,6 +7,32 @@ let currentLabId = null;
 /** @type {(() => string|null)|null} */
 let getModifiedCode = null;
 
+// --- Auto-scroll state ---
+// Auto-scroll is ON by default. When user scrolls up, it pauses.
+// When user scrolls back to the bottom, it resumes.
+let autoScroll = true;
+
+/** Check if the output element is scrolled to within threshold of the bottom */
+function isAtBottom(el) {
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 16;
+}
+
+/** Scroll to bottom if auto-scroll is active */
+function scrollIfNeeded(output) {
+  if (autoScroll) {
+    output.scrollTop = output.scrollHeight;
+  }
+  updateScrollButton();
+}
+
+/** Show/hide the scroll-to-bottom button */
+function updateScrollButton() {
+  const btn = document.getElementById("terminal-scroll-bottom");
+  const output = document.getElementById("terminal-output");
+  if (!btn || !output) return;
+  btn.style.display = (!autoScroll && output.scrollHeight > output.clientHeight) ? "flex" : "none";
+}
+
 /**
  * @param {string} labId
  * @param {boolean} serverMode
@@ -19,6 +45,33 @@ export function initTerminal(labId, serverMode, options) {
   document.getElementById("stop-btn").onclick = stopLab;
   document.getElementById("terminal-close").onclick = closeTerminal;
   document.getElementById("terminal-maximize").onclick = toggleSize;
+
+  // Scroll-to-bottom button
+  const output = document.getElementById("terminal-output");
+  let scrollBtn = document.getElementById("terminal-scroll-bottom");
+  if (!scrollBtn) {
+    scrollBtn = document.createElement("button");
+    scrollBtn.id = "terminal-scroll-bottom";
+    scrollBtn.className = "terminal-scroll-bottom";
+    scrollBtn.innerHTML = "↓";
+    scrollBtn.title = "Scroll to bottom";
+    scrollBtn.onclick = () => {
+      autoScroll = true;
+      output.scrollTop = output.scrollHeight;
+      updateScrollButton();
+    };
+    document.getElementById("terminal-panel").appendChild(scrollBtn);
+  }
+
+  // Track user scroll to pause/resume auto-scroll
+  output.addEventListener("scroll", () => {
+    if (isAtBottom(output)) {
+      autoScroll = true;
+    } else {
+      autoScroll = false;
+    }
+    updateScrollButton();
+  });
 
   // Terminal resize handle
   const h = document.getElementById("terminal-resize-handle"), p = document.getElementById("terminal-panel");
@@ -33,15 +86,17 @@ export function initTerminal(labId, serverMode, options) {
 
 function runLab() {
   if (labRunning) return; labRunning = true;
+  autoScroll = true; // Reset auto-scroll on new run
   const panel=document.getElementById("terminal-panel"), output=document.getElementById("terminal-output"), status=document.getElementById("terminal-status");
   panel.classList.add("open"); output.textContent=""; status.textContent="";
   document.getElementById("play-btn").style.display="none";
   document.getElementById("stop-btn").style.display="inline-flex";
+  updateScrollButton();
 
   // Check if we have modified code to run
   const modifiedCode = getModifiedCode ? getModifiedCode() : null;
   if (modifiedCode !== null) {
-    // POST modified code to run-modified endpoint, then connect SSE
+    // POST modified code to run-modified endpoint, then read streaming response
     fetch(`/api/run-modified/${currentLabId}`, {
       method: "POST",
       headers: { "Content-Type": "text/plain" },
@@ -62,7 +117,6 @@ function runLab() {
               // Next line should be data
             } else if (line.startsWith("data: ")) {
               const eventData = JSON.parse(line.slice(6));
-              // Determine event type from previous line context
               if (eventData.state) {
                 if (eventData.state === "running") {
                   status.innerHTML = '<span class="terminal-spinner"></span> running (modified)';
@@ -77,7 +131,7 @@ function runLab() {
                 }
               } else if (eventData.text) {
                 output.textContent += eventData.text;
-                output.scrollTop = output.scrollHeight;
+                scrollIfNeeded(output);
               }
             }
           }
@@ -107,7 +161,7 @@ function runLab() {
       if(d.state==="running"){status.innerHTML='<span class="terminal-spinner"></span> running';status.className="terminal-status running";output.innerHTML=`<span class="cmd">$ ${d.cmd.replace(/</g,"&lt;")}</span>\n`;}
       else if(d.state==="done"){eventSource.close();eventSource=null;labRunning=false;status.textContent=d.exit_code===0?"done":`exit ${d.exit_code}`;status.className=d.exit_code===0?"terminal-status":"terminal-status error";document.getElementById("stop-btn").style.display="none";document.getElementById("play-btn").style.display="inline-flex";}
     });
-    eventSource.addEventListener("output", e => { output.textContent+=JSON.parse(e.data).text; output.scrollTop=output.scrollHeight; });
+    eventSource.addEventListener("output", e => { output.textContent+=JSON.parse(e.data).text; scrollIfNeeded(output); });
     eventSource.onerror = () => { if(eventSource){eventSource.close();eventSource=null;} if(labRunning){labRunning=false;status.textContent="connection lost";status.className="terminal-status error";document.getElementById("stop-btn").style.display="none";document.getElementById("play-btn").style.display="inline-flex";} };
   }
 }
