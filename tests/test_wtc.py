@@ -21,6 +21,7 @@ from walk_the_code.config import EXT_TO_LANG, CONTENT_TYPES, _line_hash, detect_
 from walk_the_code.server import WTCHandler, ThreadedHTTPServer
 
 EXAMPLE_DIR = Path(__file__).resolve().parent.parent / "example"
+RUN_SERVER_TESTS = os.environ.get("WTC_RUN_SERVER_TESTS") == "1"
 
 
 # ---------------------------------------------------------------------------
@@ -208,6 +209,7 @@ class TestLoadConfig(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Server tests
 # ---------------------------------------------------------------------------
+@unittest.skipUnless(RUN_SERVER_TESTS, "set WTC_RUN_SERVER_TESTS=1 to run socket-binding server tests")
 class TestServer(unittest.TestCase):
     """Tests for the WTC HTTP server and its API endpoints."""
 
@@ -687,6 +689,7 @@ class TestBuilderEdgeCases(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Server edge-case tests with custom configs
 # ---------------------------------------------------------------------------
+@unittest.skipUnless(RUN_SERVER_TESTS, "set WTC_RUN_SERVER_TESTS=1 to run socket-binding server tests")
 class TestServerEmptyConfig(unittest.TestCase):
     """Server tests with a minimal/empty configuration."""
 
@@ -931,6 +934,17 @@ class TestValidator(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("hash mismatch", output)
         self.assertIn("PASS", output)
+
+    def test_blank_line_annotation_warning(self):
+        """Annotations attached to blank lines should warn so authors can re-anchor them."""
+        config_path = self._make_project(
+            {"title": "T"},
+            code_content="line1\n\nline3\n",
+            explanations={"2": {"text": "floating explanation", "hash": _line_hash("")}},
+        )
+        exit_code, output = self._run_validate(config_path)
+        self.assertEqual(exit_code, 0)
+        self.assertIn("attached to a blank line", output)
 
     def test_chapter_referencing_invalid_lab(self):
         """A chapter referencing a non-existent lab should produce an error."""

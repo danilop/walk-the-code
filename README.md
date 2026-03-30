@@ -31,6 +31,20 @@ wtc-validate path/to/config.json               # validate config and content
 walk-the-code --config path/to/config.json     # alias for wtc-serve
 ```
 
+## Tests
+
+Run the core test subset without binding sockets:
+
+```bash
+python3 -m unittest tests.test_wtc.TestValidator tests.test_wtc.TestBuilder tests.test_wtc.TestInit
+```
+
+Run the full suite, including local HTTP server tests, only in environments where localhost port binding is allowed:
+
+```bash
+WTC_RUN_SERVER_TESTS=1 python3 -m unittest tests.test_wtc
+```
+
 ## Use in your own project
 
 1. Clone `walk-the-code/` into your project

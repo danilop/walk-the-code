@@ -107,6 +107,16 @@ def validate():
                         f"{prefix}: annotation for line {line_num} but code has only {total_lines} lines"
                     )
 
+                if (
+                    isinstance(entry, dict)
+                    and entry.get("text")
+                    and 1 <= line_num <= total_lines
+                    and not code_lines[line_num - 1].strip()
+                ):
+                    warnings.append(
+                        f"{prefix}: line {line_num} annotation is attached to a blank line"
+                    )
+
                 # Diagram references
                 if isinstance(entry, dict) and entry.get("diagram"):
                     diag_id = entry["diagram"]
@@ -129,7 +139,7 @@ def validate():
         if code_path.exists():
             cov_text = code_text if (code_path.exists() and explanations) else code_path.read_text()
             total_for_cov = len(cov_text.split("\n"))
-            annotated_for_cov = len(explanations)
+            annotated_for_cov = sum(1 for key in explanations if str(key).isdigit())
             coverage_data.append((lab_id, annotated_for_cov, total_for_cov))
 
         labs_validated += 1
