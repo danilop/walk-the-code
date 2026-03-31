@@ -526,6 +526,27 @@ class TestBuilderValidation(unittest.TestCase):
         )
         self._run_build(config_path)  # Should not raise
 
+    def test_structured_highlight_is_preserved(self):
+        """Structured node/link highlights should survive the build unchanged."""
+        config_path = self._make_project(
+            {"title": "T"},
+            code_content="line1\nline2\nline3\n",
+            explanations={
+                "1": {
+                    "text": "uses diagram",
+                    "hash": "",
+                    "diagram": "flow",
+                    "highlight": {"nodes": ["A"], "links": [0]},
+                }
+            },
+            diagrams={"flow": "graph TD\n  A-->B"},
+        )
+        self._run_build(config_path)
+        bundle = json.loads((config_path.parent / "data" / "labs.json").read_text())
+        highlight = bundle["labs"][0]["explanations"]["1"]["highlight"]
+        self.assertEqual(highlight["nodes"], ["A"])
+        self.assertEqual(highlight["links"], [0])
+
     def test_stale_hash_produces_warning(self):
         """A hash that does not match the current code should produce a warning (not an error)."""
         config_path = self._make_project(

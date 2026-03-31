@@ -27,11 +27,16 @@ interface Exercise {
 }
 
 /** Line-level explanation entry in comment JSON */
+interface DiagramHighlight {
+  nodes?: string[];
+  links?: number[];
+}
+
 interface Explanation {
   text: string;
   hash?: string;
   diagram?: string;
-  highlight?: string[];
+  highlight?: string[] | DiagramHighlight;
 }
 
 /** Knowledge check question for chapter quizzes */

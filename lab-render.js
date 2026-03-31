@@ -62,6 +62,42 @@ export function getExp(key, field) {
   return typeof e === "object" ? e[field] || null : (field === "text" ? e : null);
 }
 
+/**
+ * @param {*} highlight
+ * @returns {{nodes: string[], links: number[]}}
+ */
+function normalizeDiagramHighlight(highlight) {
+  const spec = { nodes: [], links: [] };
+  if (Array.isArray(highlight)) {
+    spec.nodes = highlight.filter(id => typeof id === "string" && id);
+    return spec;
+  }
+  if (!highlight || typeof highlight !== "object") return spec;
+  if (Array.isArray(highlight.nodes)) {
+    spec.nodes = highlight.nodes.filter(id => typeof id === "string" && id);
+  }
+  if (Array.isArray(highlight.links)) {
+    spec.links = highlight.links.filter(idx => Number.isInteger(idx) && idx >= 0);
+  }
+  return spec;
+}
+
+/**
+ * @param {{nodes: string[], links: number[]}} highlight
+ * @returns {string}
+ */
+function buildDiagramHighlightStyles(highlight) {
+  const parts = [];
+  if (highlight.nodes.length) {
+    parts.push("classDef wtcHighlight fill:#f96,stroke:#333,stroke-width:2px,color:#111");
+    parts.push(`class ${highlight.nodes.join(",")} wtcHighlight`);
+  }
+  if (highlight.links.length) {
+    parts.push(`linkStyle ${highlight.links.join(",")} stroke:#f96,stroke-width:4px`);
+  }
+  return parts.length ? `\n${parts.join("\n")}` : "";
+}
+
 let diagramCounter = 0;
 
 /**
@@ -87,8 +123,8 @@ export async function showExplanation(lineNum, mermaidInstance) {
     if (diagId && state.diagrams[diagId]) {
       diagEl.classList.remove("hidden");
       let src = state.diagrams[diagId];
-      const hl = getExp(key, "highlight");
-      if (hl && hl.length) src += `\nclassDef wtcHighlight fill:#f96,stroke:#333,stroke-width:2px\nclass ${hl.join(",")} wtcHighlight`;
+      const highlight = normalizeDiagramHighlight(getExp(key, "highlight"));
+      src += buildDiagramHighlightStyles(highlight);
       const renderId = `wtc-d-${++diagramCounter}`;
       try {
         const { svg } = await mermaidInstance.render(renderId, src);
