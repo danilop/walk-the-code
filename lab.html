@@ -36,7 +36,16 @@
   </div>
 </div>
 <div class="lab-main">
-  <div class="code-panel" id="code-panel"><table class="code-table" id="code-table"></table></div>
+  <div class="code-panel" id="code-panel">
+    <div class="code-coach hidden" id="code-coach" role="status" aria-live="polite">
+      <div class="code-coach-copy">
+        <div class="code-coach-title">Click any line to inspect it</div>
+        <div class="code-coach-text">Use ↑/↓ to jump between annotated lines.</div>
+      </div>
+      <button class="code-coach-close" id="code-coach-close" aria-label="Dismiss interaction hint">&times;</button>
+    </div>
+    <table class="code-table" id="code-table"></table>
+  </div>
   <div class="h-resize" id="h-resize"></div>
   <button class="explain-toggle" id="explain-toggle">Explanation</button>
   <div class="explain-panel" id="explain-panel">
@@ -46,7 +55,16 @@
     </div>
     <div id="explain-overview"></div>
     <div id="explain-line" style="display:none">
-      <div class="explain-line-ref"><span id="explain-ref"></span><button class="overview-btn" id="overview-btn">← Overview</button></div>
+      <div class="explain-line-ref">
+        <span id="explain-ref"></span>
+        <button class="tips-btn" id="tips-btn" title="Show interaction tips" aria-label="Show interaction tips">Tips</button>
+        <div class="line-nav hidden" id="line-nav">
+          <button class="line-nav-btn" id="prev-line-btn" title="Previous annotated line (↑ / k)" aria-label="Previous annotated line">↑</button>
+          <button class="line-nav-btn" id="next-line-btn" title="Next annotated line (↓ / j)" aria-label="Next annotated line">↓</button>
+          <span class="line-nav-hint">annotated lines</span>
+        </div>
+        <button class="overview-btn" id="overview-btn">← Overview</button>
+      </div>
       <div class="explain-text" id="explain-text"></div>
       <div class="diagram-container hidden" id="diagram-container"></div>
     </div>

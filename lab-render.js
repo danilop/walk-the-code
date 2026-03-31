@@ -6,6 +6,8 @@
 
 import { state, labId, COMMENT_RE } from './lab-state.js';
 
+const CODE_COACH_KEY = "wtc-code-coach-dismissed";
+
 /** @param {string} line @returns {boolean} */
 export function isComment(line) {
   return (COMMENT_RE[state.labLanguage] || COMMENT_RE.python).test(line);
@@ -38,6 +40,31 @@ export function renderCode(code) {
     tr.addEventListener("click", () => selectLine(ownerOf(ln)));
     table.appendChild(tr);
   });
+}
+
+function coachDismissed() {
+  try { return localStorage.getItem(CODE_COACH_KEY) === "1"; } catch (e) { return false; }
+}
+
+/** @param {boolean} persist */
+export function dismissCodeCoach(persist = true) {
+  const coach = document.getElementById("code-coach");
+  if (coach) coach.classList.add("hidden");
+  if (!persist) return;
+  try { localStorage.setItem(CODE_COACH_KEY, "1"); } catch (e) { /* ignore */ }
+}
+
+export function showCodeCoach() {
+  const coach = document.getElementById("code-coach");
+  if (coach) coach.classList.remove("hidden");
+  try { localStorage.removeItem(CODE_COACH_KEY); } catch (e) { /* ignore */ }
+}
+
+export function updateCodeCoach() {
+  const coach = document.getElementById("code-coach");
+  if (!coach) return;
+  const shouldShow = state.selectedLine === null && state.annotatedLines.length > 0 && !coachDismissed();
+  coach.classList.toggle("hidden", !shouldShow);
 }
 
 /** @param {number} lineNum */
@@ -99,6 +126,42 @@ function buildDiagramHighlightStyles(highlight) {
 }
 
 let diagramCounter = 0;
+
+/**
+ * @param {number} direction
+ * @param {number|null} [fromLine]
+ * @returns {number|null}
+ */
+export function getAdjacentAnnotatedLine(direction, fromLine = state.selectedLine) {
+  if (!state.annotatedLines.length) return null;
+  if (fromLine === null) return direction > 0 ? state.annotatedLines[0] : state.annotatedLines[state.annotatedLines.length - 1];
+  const idx = state.annotatedLines.indexOf(fromLine);
+  if (direction > 0) {
+    if (idx >= 0) return state.annotatedLines[idx + 1] ?? null;
+    return state.annotatedLines.find(l => l > fromLine) ?? null;
+  }
+  if (idx > 0) return state.annotatedLines[idx - 1];
+  const prev = state.annotatedLines.filter(l => l < fromLine);
+  return prev.length ? prev[prev.length - 1] : null;
+}
+
+export function updateLineNavControls() {
+  const nav = document.getElementById("line-nav");
+  const prevBtn = /** @type {HTMLButtonElement|null} */ (document.getElementById("prev-line-btn"));
+  const nextBtn = /** @type {HTMLButtonElement|null} */ (document.getElementById("next-line-btn"));
+  if (!nav || !prevBtn || !nextBtn) return;
+  const visible = state.selectedLine !== null && state.annotatedLines.length > 0;
+  nav.classList.toggle("hidden", !visible);
+  if (!visible) return;
+  prevBtn.disabled = getAdjacentAnnotatedLine(-1) === null;
+  nextBtn.disabled = getAdjacentAnnotatedLine(1) === null;
+}
+
+/** @param {number} direction */
+export function selectAdjacentAnnotatedLine(direction) {
+  const target = getAdjacentAnnotatedLine(direction);
+  if (target !== null) selectLine(target);
+}
 
 /**
  * @param {number} lineNum
@@ -178,8 +241,10 @@ export function selectLine(lineNum) {
     try { localStorage.setItem(`wtc-visited-${labId}`, JSON.stringify([...state.visitedLines])); } catch (e) { /* ignore */ }
     if (row) row.classList.add("visited");
   }
+  dismissCodeCoach();
   showExplanation(lineNum, _mermaidRef);
   updateProgress();
+  updateLineNavControls();
 }
 
 export function showOverview() {
@@ -196,7 +261,7 @@ export function showOverview() {
   }
   if (ovHtml) {
     // Add reset progress link
-    ovHtml += `<div class="reset-progress"><button class="reset-progress-btn" id="reset-progress-btn">Reset progress for this lab</button></div>`;
+    ovHtml += `<div class="reset-progress"><button class="reset-progress-btn" id="reset-progress-btn">Reset progress for this lab</button><button class="reset-progress-btn" id="show-tips-btn">Show tips again</button></div>`;
     ov.innerHTML = ovHtml;
     ov.querySelectorAll('.exercise-check').forEach(cb => {
       cb.addEventListener('change', e => {
@@ -219,9 +284,13 @@ export function showOverview() {
         showOverview(); // Re-render to uncheck exercise boxes
       });
     }
+    const showTipsBtn = document.getElementById("show-tips-btn");
+    if (showTipsBtn) showTipsBtn.addEventListener("click", () => showCodeCoach());
   } else {
     ov.innerHTML = '<div style="color:var(--text-muted);margin-top:40px;text-align:center">Click a line to see its explanation</div>';
   }
+  updateLineNavControls();
+  updateCodeCoach();
 }
 
 export function buildNav() {

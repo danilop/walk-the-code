@@ -7,7 +7,8 @@ import { state, labId, lineHash } from './lab-state.js';
 import { loadServerData, loadStaticData } from './lab-data.js';
 import {
   renderCode, buildAnnotatedLines, buildNav, selectLine,
-  showOverview, updateProgress, setMermaidRef,
+  showOverview, updateProgress, setMermaidRef, selectAdjacentAnnotatedLine,
+  dismissCodeCoach, showCodeCoach,
 } from './lab-render.js';
 import { initSearch } from './lab-search.js';
 import { initEditMode, showEditControls, getEditorCode } from './lab-edit.js';
@@ -48,6 +49,10 @@ if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 // --- showOverview on window (used by HTML onclick) ---
 window.showOverview = showOverview;
 document.getElementById("overview-btn").onclick = showOverview;
+document.getElementById("prev-line-btn").onclick = () => selectAdjacentAnnotatedLine(-1);
+document.getElementById("next-line-btn").onclick = () => selectAdjacentAnnotatedLine(1);
+document.getElementById("code-coach-close").onclick = () => dismissCodeCoach();
+document.getElementById("tips-btn").onclick = () => showCodeCoach();
 
 // --- Search ---
 initSearch();
@@ -60,11 +65,10 @@ document.addEventListener("keydown", e => {
   if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); const btn = document.getElementById("play-btn"); if (btn && btn.style.display !== "none") btn.click(); return; }
   if (!state.annotatedLines.length) return;
   if (e.key === "Escape") { e.preventDefault(); showOverview(); return; }
-  if (state.selectedLine === null && (e.key === "ArrowDown" || e.key === "j")) { e.preventDefault(); selectLine(state.annotatedLines[0]); return; }
+  if (state.selectedLine === null && (e.key === "ArrowDown" || e.key === "j")) { e.preventDefault(); selectAdjacentAnnotatedLine(1); return; }
   if (state.selectedLine === null) return;
-  const idx = state.annotatedLines.indexOf(state.selectedLine);
-  if (e.key === "ArrowDown" || e.key === "j") { e.preventDefault(); const n = idx >= 0 ? idx + 1 : state.annotatedLines.findIndex(l => l > state.selectedLine); if (n >= 0 && n < state.annotatedLines.length) selectLine(state.annotatedLines[n]); }
-  else if (e.key === "ArrowUp" || e.key === "k") { e.preventDefault(); const p = idx > 0 ? idx - 1 : state.annotatedLines.filter(l => l < state.selectedLine).length - 1; if (p >= 0) selectLine(state.annotatedLines[p]); }
+  if (e.key === "ArrowDown" || e.key === "j") { e.preventDefault(); selectAdjacentAnnotatedLine(1); }
+  else if (e.key === "ArrowUp" || e.key === "k") { e.preventDefault(); selectAdjacentAnnotatedLine(-1); }
 });
 
 // --- Resize handles ---
