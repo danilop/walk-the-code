@@ -1,6 +1,8 @@
 # walk-the-code
 
-Turn any codebase into an interactive **code walkthrough**. Click a line, read what it does, see the architecture light up. Supports 30+ programming languages, Mermaid diagrams with per-line node highlighting, nested chapters, guided tours, exercises, and static deployment to GitHub Pages.
+AI coding agents help us write code — but can they also help us explain it? Walk-the-code turns any codebase into an interactive **code walkthrough** where readers click a line, read what it does, and see the architecture light up. Use an AI agent to generate the walkthrough, deploy it to GitHub Pages, and keep it in sync as the code evolves.
+
+Supports 30+ languages, Mermaid diagrams with per-line highlighting, nested chapters, guided tours, exercises, and embeddable widgets.
 
 **[Live demo →](https://danilop.github.io/micro-gpt-and-beyond/)** — 24 labs walking through a GPT implementation from pure Python to production serving.
 
