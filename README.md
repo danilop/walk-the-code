@@ -8,7 +8,7 @@ Turn any codebase into an interactive **code walkthrough**. Click a line, read w
 
 The fastest way to create a walkthrough for any repo. Ask your AI coding agent:
 
-> Read the walk-the-code skill at https://github.com/danilop/walk-the-code/blob/main/wtc/agent-skill.md and create a code walkthrough for this repository.
+> Read the walk-the-code skill at https://github.com/danilop/walk-the-code/blob/main/walk-the-code-skill/SKILL.md and create a code walkthrough for this repository.
 
 The agent analyzes your codebase and generates everything: `config.json`, line-by-line annotations, Mermaid diagrams, learning objectives, and exercises. No scaffolding needed — it creates a real config tailored to your code.
 
@@ -30,12 +30,12 @@ wtc-serve --config walk-the-code/config.json
 
 See [full AI workflow details](#ai-assisted-workflow) below, including CI/CD validation and deployment YAML.
 
-Two files in `wtc/` support AI agents:
+Two files support AI agents:
 
 | File | What it is | When to use |
 |---|---|---|
-| `wtc/agent-skill.md` | Full skill definition with workflow and quality rules | Install as a persistent skill in your agent |
-| `wtc/prompt.md` | Short prompt linking to the skill | Paste into a one-off chat |
+| `walk-the-code-skill/SKILL.md` | [Agent Skill](https://agentskills.io/) with frontmatter and workflow | Install as a skill in your agent (see [agentskills.io](https://agentskills.io/)) |
+| `PROMPT.md` | Short prompt linking to the skill | Paste into a one-off chat session |
 
 ## Quick start
 

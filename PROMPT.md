@@ -6,7 +6,7 @@ You are creating an interactive code walkthrough using walk-the-code (https://gi
 
 1. Read the walk-the-code README at https://github.com/danilop/walk-the-code/blob/main/README.md for the full config schema, comment format, and CLI commands.
 
-2. Read the detailed skill guide at https://github.com/danilop/walk-the-code/blob/main/wtc/agent-skill.md for the complete workflow, quality principles, and content checklist.
+2. Read the detailed skill guide at https://github.com/danilop/walk-the-code/blob/main/walk-the-code-skill/SKILL.md for the complete workflow, quality principles, and content checklist.
 
 3. Follow the 8-step workflow in the skill guide:
    - Assess the codebase (identify core files, entry points, data flow)
