@@ -144,7 +144,13 @@ Then in annotations:
 
 For each lab, add:
 - `learning_objectives`: 2-4 concrete outcomes ("Understand how the KV cache eliminates redundant computation")
-- `exercises`: 1-3 hands-on prompts that ask the reader to modify the code and observe the effect
+- `exercises` (optional): 1-3 hands-on prompts that ask the reader to modify the code and observe the effect
+
+**When to include exercises:**
+- Educational repos, tutorials, courses — always. Exercises are the primary learning mechanism.
+- Libraries/frameworks — when the lab explains an extension point or configuration. ("Change the middleware order and observe how it affects request processing.")
+- Applications — when the lab covers business logic that can be experimented with safely.
+- Skip exercises for labs that explain read-only concepts (architecture overviews, deployment configs) where modifying the code wouldn't teach anything.
 
 Good exercises change one thing and make the reader predict or observe the consequence:
 ```json
@@ -181,7 +187,7 @@ Before considering the tutorial complete, verify:
 - [ ] `important` lines mark architectural boundaries (10-15% of annotations)
 - [ ] At least 2 reusable diagrams with per-line highlighting
 - [ ] Chapters have descriptions and overview diagrams
-- [ ] Labs have learning objectives and at least one exercise
+- [ ] Labs have learning objectives and exercises where appropriate (see Step 6)
 - [ ] The reading order builds concepts progressively (no forward references)
 - [ ] `wtc-validate` passes with zero errors
 - [ ] Annotation coverage is 30-60% (not too sparse, not noise)
