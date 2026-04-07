@@ -85,6 +85,7 @@ code{background:var(--surface);border:1px solid var(--border);border-radius:4px;
 .line-num.has-important::after{background:var(--chapter-accent);border:none}
 .line-num.has-diagram::after{background:var(--accent);border:none}
 .gutter-legend{display:flex;gap:12px;align-items:center;margin-top:4px;font-size:.72rem;color:var(--text-muted)}
+.lab-header .gutter-legend{margin-top:6px;justify-content:flex-end}
 .gutter-legend-item{display:flex;align-items:center;gap:4px}
 .gutter-legend-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .gutter-legend-dot.dot-annotation{border:1.5px solid var(--text-muted);background:transparent}
