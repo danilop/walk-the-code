@@ -6,6 +6,8 @@ Supports 30+ languages, Mermaid diagrams with per-line highlighting, nested chap
 
 **[Live demo →](https://danilop.github.io/micro-gpt-and-beyond/)** — 24 labs walking through a GPT implementation from pure Python to production serving.
 
+<video src="https://github.com/danilop/walk-the-code/raw/main/demo.mp4" autoplay loop muted playsinline width="800"></video>
+
 ## Generate a walkthrough with an AI coding agent
 
 The fastest way to create a walkthrough for any repo. Ask your AI coding agent:
