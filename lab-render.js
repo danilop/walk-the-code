@@ -67,13 +67,14 @@ export function renderCode(code) {
     tr.dataset.line = String(ln);
     const key = String(ln);
     let gutterCls = "line-num";
+    let gutterTitle = "";
     const exp = state.explanations[key];
     if (exp) {
-      if (getExp(key, "diagram")) gutterCls += " has-diagram";
-      else if (typeof exp === "object" && exp.important) gutterCls += " has-important";
-      else gutterCls += " has-annotation";
+      if (getExp(key, "diagram")) { gutterCls += " has-diagram"; gutterTitle = "Has diagram"; }
+      else if (typeof exp === "object" && exp.important) { gutterCls += " has-important"; gutterTitle = "Key concept"; }
+      else { gutterCls += " has-annotation"; gutterTitle = "Explained"; }
     }
-    tr.innerHTML = `<td class="${gutterCls}">${ln}</td><td class="line-content">${html || " "}</td>`;
+    tr.innerHTML = `<td class="${gutterCls}"${gutterTitle ? ` title="${gutterTitle}"` : ""}>${ln}</td><td class="line-content">${html || " "}</td>`;
     tr.addEventListener("click", () => selectLine(ownerOf(ln)));
     table.appendChild(tr);
   });
