@@ -467,12 +467,12 @@ The manual path is documented in [How to create a new content repository](#how-t
 
 ### Skill and prompt files
 
-Two files in the walk-the-code repo (`.wtc/`) help AI coding agents generate walkthroughs:
+Two files in the walk-the-code repo (`wtc/`) help AI coding agents generate walkthroughs:
 
 | File | What it is | When to use |
 |---|---|---|
-| `.wtc/agent-skill.md` | Full skill definition with workflow, quality rules, and checklist | Install as a persistent skill/tool in your agent |
-| `.wtc/prompt.md` | Short prompt that links to the skill and README | Paste into a one-off chat session |
+| `wtc/agent-skill.md` | Full skill definition with workflow, quality rules, and checklist | Install as a persistent skill/tool in your agent |
+| `wtc/prompt.md` | Short prompt that links to the skill and README | Paste into a one-off chat session |
 
 Both reference this README for exact syntax, so they stay in sync as the tool evolves.
 
@@ -480,7 +480,7 @@ Both reference this README for exact syntax, so they stay in sync as the tool ev
 
 **1. Create the walkthrough.** Ask your AI coding agent:
 
-> Read the walk-the-code skill at https://github.com/danilop/walk-the-code/blob/main/.wtc/agent-skill.md and create a code walkthrough for this repository. Focus on the core source files, not tests or build configs.
+> Read the walk-the-code skill at https://github.com/danilop/walk-the-code/blob/main/wtc/agent-skill.md and create a code walkthrough for this repository. Focus on the core source files, not tests or build configs.
 
 The agent will analyze your codebase and create a `walk-the-code/` directory with everything needed: `config.json`, `comments/`, `diagrams/`, learning objectives, exercises, and content hashes. No scaffolding step required — the agent generates a real config tailored to your code, not a hello-world template.
 
