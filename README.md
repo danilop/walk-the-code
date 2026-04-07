@@ -6,13 +6,15 @@ Supports 30+ languages, Mermaid diagrams with per-line highlighting, nested chap
 
 **[Live demo →](https://danilop.github.io/micro-gpt-and-beyond/)** — 24 labs walking through a GPT implementation from pure Python to production serving.
 
-<video src="https://github.com/danilop/walk-the-code/raw/main/demo.mp4" autoplay loop muted playsinline width="800"></video>
+![walk-the-code demo](demo.gif)
 
 ## Generate a walkthrough with an AI coding agent
 
 The fastest way to create a walkthrough for any repo. Ask your AI coding agent:
 
 > Read the walk-the-code skill at https://github.com/danilop/walk-the-code/blob/main/walk-the-code-skill/SKILL.md and create a code walkthrough for this repository.
+
+Or, if your agent doesn't support [Agent Skills](https://agentskills.io/), paste the contents of [`PROMPT.md`](PROMPT.md) into your chat instead — it links to the same workflow.
 
 The agent analyzes your codebase and generates everything: `config.json`, line-by-line annotations, Mermaid diagrams, learning objectives, and exercises. No scaffolding needed — it creates a real config tailored to your code.
 
@@ -34,12 +36,12 @@ wtc-serve --config walk-the-code/config.json
 
 See [full AI workflow details](#ai-assisted-workflow) below, including CI/CD validation and deployment YAML.
 
-Two files support AI agents:
+Two files support AI agents — choose based on your agent's capabilities:
 
-| File | What it is | When to use |
+| File | Format | When to use |
 |---|---|---|
-| `walk-the-code-skill/SKILL.md` | [Agent Skill](https://agentskills.io/) with frontmatter and workflow | Install as a skill in your agent (see [agentskills.io](https://agentskills.io/)) |
-| `PROMPT.md` | Short prompt linking to the skill | Paste into a one-off chat session |
+| [`walk-the-code-skill/SKILL.md`](walk-the-code-skill/SKILL.md) | [Agent Skill](https://agentskills.io/) (YAML frontmatter + instructions) | Your agent supports skills — install it once, the agent activates it automatically when relevant |
+| [`PROMPT.md`](PROMPT.md) | Plain prompt linking to the skill and README | Your agent doesn't support skills, or you want a one-off generation without installing anything |
 
 ## Quick start
 
