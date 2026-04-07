@@ -35,6 +35,7 @@ interface DiagramHighlight {
 interface Explanation {
   text: string;
   hash?: string;
+  important?: boolean;
   diagram?: string;
   highlight?: string[] | DiagramHighlight;
 }
@@ -59,10 +60,18 @@ interface Chapter {
 }
 
 /** Site config (top-level fields from config.json) */
+interface Terminology {
+  group?: string;
+  group_plural?: string;
+  unit?: string;
+  unit_plural?: string;
+}
+
 interface SiteConfig {
   title?: string;
   tagline?: string;
   repo_url?: string;
+  terminology?: Terminology;
 }
 
 /** Static bundle from data/labs.json */
@@ -93,6 +102,13 @@ interface OutputEvent {
 }
 
 /** WTCSite module exposed on window */
+interface ResolvedTerminology {
+  group: string;
+  groupPlural: string;
+  unit: string;
+  unitPlural: string;
+}
+
 interface WTCSiteModule {
   loadConfig(): Promise<SiteConfig>;
   renderGitHubCorner(config: SiteConfig): void;
@@ -100,6 +116,7 @@ interface WTCSiteModule {
   siteTitle(config: SiteConfig): string;
   addProgressBadges(labs: Lab[]): void;
   escapeHtml(str: string): string;
+  terminology(config: SiteConfig): ResolvedTerminology;
 }
 
 interface Window {

@@ -29,11 +29,25 @@ const chapterId = new URLSearchParams(location.search).get("chapter");
   window.WTCSite.renderGitHubCorner(config);
 
   const labMap = {}; labs.forEach((l,i) => labMap[l.id] = {...l, idx:i});
-  const ci = chapters.findIndex(c => c.id === chapterId);
-  const ch = chapters[ci];
+  function flattenChapters(chapters, depth, prefix) {
+    let result = [];
+    (chapters||[]).forEach((c, i) => {
+      const num = prefix ? `${prefix}.${i+1}` : `${i+1}`;
+      result.push({...c, _depth: depth, _num: num});
+      if (c.chapters) result = result.concat(flattenChapters(c.chapters, depth+1, num));
+    });
+    return result;
+  }
+  const allFlat = flattenChapters(chapters, 0, "");
+  const flatEntry = allFlat.find(c => c.id === chapterId);
+  const ci = allFlat.indexOf(flatEntry);
+  const ch = flatEntry;
   if (!ch) { document.body.textContent = "Chapter not found"; return; }
 
-  document.getElementById("ch-num").textContent = `Chapter ${ci+1}`;
+  const terms = window.WTCSite.terminology(config);
+  document.getElementById("back-link").textContent = `\u2190 All ${terms.unitPlural}`;
+  document.getElementById("ch-num").textContent = `${terms.group} ${flatEntry._num}`;
+  document.getElementById("units-heading").textContent = `${terms.unitPlural} in this ${terms.group.toLowerCase()}`;
   document.getElementById("ch-title").textContent = ch.title;
   window.WTCSite.setDocumentTitle(ch.title, config);
   document.getElementById("ch-desc").innerHTML = ch.description || "";
@@ -65,6 +79,18 @@ const chapterId = new URLSearchParams(location.search).get("chapter");
   });
 
   window.WTCSite.addProgressBadges(labs);
+
+  // --- Sub-chapters ---
+  if (ch.chapters && ch.chapters.length) {
+    const subSection = document.createElement("div");
+    subSection.innerHTML = `<h2 style="font-size:1.1rem;font-weight:600;margin:24px 0 12px;color:var(--text-muted)">Sub-${terms.groupPlural.toLowerCase()}</h2>`;
+    const subUl = document.createElement("ul"); subUl.className = "lab-list";
+    ch.chapters.forEach((sub, si) => {
+      subUl.innerHTML += `<li class="lab-item"><a href="chapter.html?chapter=${sub.id}"><span class="lab-num">${flatEntry._num}.${si+1}</span><div><div class="lab-title-text">${WTCSite.escapeHtml(sub.title)}</div></div></a></li>`;
+    });
+    subSection.appendChild(subUl);
+    document.getElementById("labs").after(subSection);
+  }
 
   // --- Knowledge Checks ---
   if (ch.knowledge_checks && ch.knowledge_checks.length > 0) {
@@ -159,6 +185,6 @@ const chapterId = new URLSearchParams(location.search).get("chapter");
   }
 
   const nav = document.getElementById("nav-row");
-  if (ci > 0) nav.innerHTML += `<a class="nav-btn" href="chapter.html?chapter=${chapters[ci-1].id}">&larr; ${WTCSite.escapeHtml(chapters[ci-1].title)}</a>`;
-  if (ci < chapters.length-1) nav.innerHTML += `<a class="nav-btn" href="chapter.html?chapter=${chapters[ci+1].id}">${WTCSite.escapeHtml(chapters[ci+1].title)} &rarr;</a>`;
+  if (ci > 0) nav.innerHTML += `<a class="nav-btn" href="chapter.html?chapter=${allFlat[ci-1].id}">&larr; ${WTCSite.escapeHtml(allFlat[ci-1].title)}</a>`;
+  if (ci < allFlat.length-1) nav.innerHTML += `<a class="nav-btn" href="chapter.html?chapter=${allFlat[ci+1].id}">${WTCSite.escapeHtml(allFlat[ci+1].title)} &rarr;</a>`;
 })();

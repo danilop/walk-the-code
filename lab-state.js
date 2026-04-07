@@ -5,9 +5,10 @@
  * State is exported as a mutable object so mutations are visible across modules.
  */
 
-const labId = new URLSearchParams(location.search).get("lab");
+const params = new URLSearchParams(location.search);
+const labId = params.get("lab");
 
-/** @type {{ explanations: Record<string, Explanation|string>, codeLines: string[], selectedLine: number|null, staleLines: Set<number>, serverMode: boolean, labLanguage: string, annotatedLines: number[], diagrams: Record<string, string>, visitedLines: Set<number>, completedExercises: Set<number>, allLabs: Lab[], allChapters: Chapter[], labDescription: string, labObjectives: string[], labExercises: Exercise[] }} */
+/** @type {{ explanations: Record<string, Explanation|string>, codeLines: string[], selectedLine: number|null, staleLines: Set<number>, serverMode: boolean, labLanguage: string, annotatedLines: number[], diagrams: Record<string, string>, visitedLines: Set<number>, completedExercises: Set<number>, allLabs: Lab[], allChapters: Chapter[], labDescription: string, labObjectives: string[], labExercises: Exercise[], labFiles: {path:string, language:string, role:string}[], currentFile: string|null }} */
 export const state = {
   explanations: {},
   codeLines: [],
@@ -24,9 +25,13 @@ export const state = {
   labDescription: "",
   labObjectives: [],
   labExercises: [],
+  labFiles: [],
+  currentFile: null,
+  tourActive: false,
+  tourIndex: -1,
 };
 
-export { labId };
+export { labId, params };
 
 /** @type {Record<string, RegExp>} */
 export const COMMENT_RE = {

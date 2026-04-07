@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Embed — walk-the-code</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/c.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/cpp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+</head>
+<body class="embed-mode">
+<div class="lab-main" style="height:100vh">
+  <div class="code-panel" id="code-panel">
+    <div class="file-tabs" id="file-tabs"></div>
+    <table class="code-table" id="code-table"></table>
+  </div>
+  <div class="h-resize" id="h-resize"></div>
+  <div class="explain-panel" id="explain-panel">
+    <div id="explain-overview"></div>
+    <div id="explain-line" style="display:none">
+      <div class="explain-line-ref"><span id="explain-ref"></span>
+        <div class="line-nav hidden" id="line-nav">
+          <button class="line-nav-btn" id="prev-line-btn">↑</button>
+          <button class="line-nav-btn" id="next-line-btn">↓</button>
+        </div>
+      </div>
+      <div class="explain-text" id="explain-text"></div>
+      <div class="diagram-container hidden" id="diagram-container"></div>
+    </div>
+  </div>
+</div>
+<script src="site.js"></script>
+<script type="module" src="embed.js"></script>
+</body>
+</html>

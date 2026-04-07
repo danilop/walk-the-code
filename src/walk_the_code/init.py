@@ -34,10 +34,10 @@ _EXAMPLE_COMMENTS = {
     "2": "<p>Python's <code>random</code> module provides pseudo-random number generation.</p>",
     "4": "<p>A list of greeting words to randomly choose from.</p>",
     "5": "<p>A list of targets for the greeting.</p>",
-    "7": "<p>A function that combines a random greeting with a random target.</p>",
+    "7": {"text": "<p>A function that combines a random greeting with a random target.</p>", "important": True},
     "8": "<p><code>random.choice()</code> picks a random element from a list.</p>",
     "10": "<p>An f-string combines the greeting and target with a comma and exclamation mark.</p>",
-    "12": '<p>The <code>if __name__ == "__main__"</code> guard runs this block only when executed directly.</p>',
+    "12": {"text": '<p>The <code>if __name__ == "__main__"</code> guard runs this block only when executed directly.</p>', "important": True},
     "13": "<p>Generate 5 random greetings to demonstrate the function.</p>",
 }
 
@@ -205,6 +205,12 @@ def _scaffold_basic(cwd, config_path, title, tagline, repo_url, dirs):
         "tagline": tagline,
         "repo_url": repo_url,
         "code_dir": "samples",
+        "terminology": {
+            "group": "Group",
+            "group_plural": "Groups",
+            "unit": "Unit",
+            "unit_plural": "Units",
+        },
         "chapters": [],
         "labs": [_EXAMPLE_LAB],
     }
@@ -230,6 +236,12 @@ def _scaffold_multilang(cwd, config_path, title, tagline, repo_url, dirs):
         "tagline": tagline,
         "repo_url": repo_url,
         "code_dir": "samples",
+        "terminology": {
+            "group": "Group",
+            "group_plural": "Groups",
+            "unit": "Unit",
+            "unit_plural": "Units",
+        },
         "chapters": [],
         "labs": [_PYTHON_MULTILANG_LAB, _JAVA_LAB],
     }
@@ -264,6 +276,12 @@ def _scaffold_chapter(cwd, config_path, title, tagline, repo_url, dirs):
         "tagline": tagline,
         "repo_url": repo_url,
         "code_dir": "samples",
+        "terminology": {
+            "group": "Chapter",
+            "group_plural": "Chapters",
+            "unit": "Lab",
+            "unit_plural": "Labs",
+        },
         "chapters": [chapter],
         "labs": [_EXAMPLE_LAB],
     }
@@ -292,9 +310,12 @@ def _create_lab(cwd, lab_id, filename, code, comments_map):
     # Build comment annotations with computed hashes
     code_lines = code.splitlines()
     comments = {}
-    for line_num, text in comments_map.items():
+    for line_num, entry in comments_map.items():
         line_content = code_lines[int(line_num) - 1]
-        comments[line_num] = {"text": text, "hash": _line_hash(line_content)}
+        if isinstance(entry, dict):
+            comments[line_num] = {**entry, "hash": _line_hash(line_content)}
+        else:
+            comments[line_num] = {"text": entry, "hash": _line_hash(line_content)}
 
     # Write comment file
     comment_dir = cwd / "comments" / lab_id

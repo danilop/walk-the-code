@@ -1,23 +1,148 @@
 {
-  "1": {"text": "Javadoc comment describing the class purpose.", "hash": ""},
-  "3": {"text": "Java's <code>Random</code> class for pseudo-random number generation.", "hash": ""},
-  "5": {"text": "Public class — Java requires the filename to match the class name.", "hash": ""},
-  "6": {"text": "Seeded RNG for reproducible results across runs.", "hash": ""},
-  "8": {"text": "The core estimation method. Same algorithm as the Python version: throw random darts, count hits inside the quarter-circle.", "hash": "", "diagram": "monte_carlo", "highlight": ["generate", "test", "inside", "outside"]},
-  "9": {"text": "Counter for points landing inside the quarter-circle.", "hash": "", "diagram": "monte_carlo", "highlight": ["inside"]},
-  "10": {"text": "Loop over all samples — each iteration generates one random point.", "hash": "", "diagram": "monte_carlo", "highlight": ["generate"]},
-  "11": {"text": "Random x in [0, 1). Java's <code>nextDouble()</code> returns a uniform double.", "hash": "", "diagram": "monte_carlo", "highlight": ["generate"]},
-  "12": {"text": "Random y in [0, 1).", "hash": "", "diagram": "monte_carlo", "highlight": ["generate"]},
-  "13": {"text": "Geometric test: does this point fall inside the unit quarter-circle?", "hash": "", "diagram": "monte_carlo", "highlight": ["test"]},
-  "14": {"text": "Inside the circle — count it.", "hash": "", "diagram": "monte_carlo", "highlight": ["inside"]},
-  "17": {"text": "Return 4 × (inside/total). The quarter-circle area is π/4, so this ratio estimates π.", "hash": "", "diagram": "monte_carlo", "highlight": ["ratio", "multiply"]},
-  "20": {"text": "Standard error using the binomial proportion formula, same math as the Python version.", "hash": "", "diagram": "monte_carlo", "highlight": ["error"]},
-  "21": {"text": "Estimate the underlying probability p = π/4 from our sample.", "hash": "", "diagram": "monte_carlo", "highlight": ["ratio"]},
-  "22": {"text": "SE = 4√(p(1-p)/n). Error shrinks as 1/√n — need 100× more samples for 10× less error.", "hash": "", "diagram": "monte_carlo", "highlight": ["error"]},
-  "25": {"text": "Java's entry point. The <code>String[] args</code> parameter receives command-line arguments.", "hash": ""},
-  "26": {"text": "Same sample sizes as the Python version for direct comparison.", "hash": ""},
-  "31": {"text": "Run estimation at each sample size.", "hash": "", "diagram": "monte_carlo", "highlight": ["multiply"]},
-  "32": {"text": "Estimate Pi with <code>n</code> random points.", "hash": "", "diagram": "monte_carlo", "highlight": ["multiply"]},
-  "33": {"text": "Compute the theoretical standard error.", "hash": "", "diagram": "monte_carlo", "highlight": ["error"]},
-  "34": {"text": "Absolute deviation from the true value of Pi.", "hash": ""}
+  "1": {
+    "text": "Javadoc comment describing the class purpose.",
+    "hash": "663f1e64"
+  },
+  "3": {
+    "text": "Java's <code>Random</code> class for pseudo-random number generation.",
+    "hash": "a873d007"
+  },
+  "5": {
+    "text": "Public class \u2014 Java requires the filename to match the class name.",
+    "hash": "4408eba1"
+  },
+  "6": {
+    "text": "Seeded RNG for reproducible results across runs.",
+    "hash": "c4cf4c4c",
+    "important": true
+  },
+  "8": {
+    "text": "The core estimation method. Same algorithm as the Python version: throw random darts, count hits inside the quarter-circle.",
+    "hash": "245e53c7",
+    "diagram": "monte_carlo",
+    "highlight": [
+      "generate",
+      "test",
+      "inside",
+      "outside"
+    ]
+  },
+  "9": {
+    "text": "Counter for points landing inside the quarter-circle.",
+    "hash": "318e5310",
+    "diagram": "monte_carlo",
+    "highlight": [
+      "inside"
+    ]
+  },
+  "10": {
+    "text": "Loop over all samples \u2014 each iteration generates one random point.",
+    "hash": "872340ae",
+    "diagram": "monte_carlo",
+    "highlight": [
+      "generate"
+    ]
+  },
+  "11": {
+    "text": "Random x in [0, 1). Java's <code>nextDouble()</code> returns a uniform double.",
+    "hash": "7be098a1",
+    "diagram": "monte_carlo",
+    "highlight": [
+      "generate"
+    ]
+  },
+  "12": {
+    "text": "Random y in [0, 1).",
+    "hash": "c8c5f463",
+    "diagram": "monte_carlo",
+    "highlight": [
+      "generate"
+    ]
+  },
+  "13": {
+    "text": "Geometric test: does this point fall inside the unit quarter-circle?",
+    "hash": "04327770",
+    "diagram": "monte_carlo",
+    "highlight": [
+      "test"
+    ]
+  },
+  "14": {
+    "text": "Inside the circle \u2014 count it.",
+    "hash": "6db6b82a",
+    "diagram": "monte_carlo",
+    "highlight": [
+      "inside"
+    ]
+  },
+  "17": {
+    "text": "Return 4 \u00d7 (inside/total). The quarter-circle area is \u03c0/4, so this ratio estimates \u03c0.",
+    "hash": "7b5b7406",
+    "diagram": "monte_carlo",
+    "highlight": [
+      "ratio",
+      "multiply"
+    ]
+  },
+  "20": {
+    "text": "Standard error using the binomial proportion formula, same math as the Python version.",
+    "hash": "86bcad1c",
+    "diagram": "monte_carlo",
+    "highlight": [
+      "error"
+    ]
+  },
+  "21": {
+    "text": "Estimate the underlying probability p = \u03c0/4 from our sample.",
+    "hash": "4d223da1",
+    "diagram": "monte_carlo",
+    "highlight": [
+      "ratio"
+    ]
+  },
+  "22": {
+    "text": "SE = 4\u221a(p(1-p)/n). Error shrinks as 1/\u221an \u2014 need 100\u00d7 more samples for 10\u00d7 less error.",
+    "hash": "7dbf07b7",
+    "diagram": "monte_carlo",
+    "highlight": [
+      "error"
+    ]
+  },
+  "25": {
+    "text": "Java's entry point. The <code>String[] args</code> parameter receives command-line arguments.",
+    "hash": "6c19bf63",
+    "important": true
+  },
+  "26": {
+    "text": "Same sample sizes as the Python version for direct comparison.",
+    "hash": "ff19e498"
+  },
+  "31": {
+    "text": "Run estimation at each sample size.",
+    "hash": "36cb0947",
+    "diagram": "monte_carlo",
+    "highlight": [
+      "multiply"
+    ]
+  },
+  "32": {
+    "text": "Estimate Pi with <code>n</code> random points.",
+    "hash": "3fe3d22b",
+    "diagram": "monte_carlo",
+    "highlight": [
+      "multiply"
+    ]
+  },
+  "33": {
+    "text": "Compute the theoretical standard error.",
+    "hash": "67be4f3f",
+    "diagram": "monte_carlo",
+    "highlight": [
+      "error"
+    ]
+  },
+  "34": {
+    "text": "Absolute deviation from the true value of Pi.",
+    "hash": "7e462af1"
+  }
 }

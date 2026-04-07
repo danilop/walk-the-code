@@ -8,6 +8,19 @@ window.WTCSite = (() => {
     return config?.title || "walk-the-code";
   }
 
+  function _injectAnalytics() {
+    if (cachedConfig && cachedConfig.analytics_snippet) {
+      const div = document.createElement('div');
+      div.innerHTML = cachedConfig.analytics_snippet;
+      div.querySelectorAll('script').forEach(s => {
+        const ns = document.createElement('script');
+        [...s.attributes].forEach(a => ns.setAttribute(a.name, a.value));
+        ns.textContent = s.textContent;
+        document.body.appendChild(ns);
+      });
+    }
+  }
+
   /** @returns {Promise<SiteConfig>} */
   async function loadConfig() {
     if (cachedConfig) return cachedConfig;
@@ -22,6 +35,7 @@ window.WTCSite = (() => {
       const response = await fetch("data/labs.json");
       const bundle = await response.json();
       cachedConfig = bundle.config || {};
+      _injectAnalytics();
       return cachedConfig;
     } catch (e) {
       cachedConfig = {};
@@ -105,5 +119,18 @@ window.WTCSite = (() => {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   }
 
-  return { loadConfig, renderGitHubCorner, setDocumentTitle, siteTitle, addProgressBadges, escapeHtml };
+  /** @param {SiteConfig} config @returns {ResolvedTerminology} */
+  function terminology(config) {
+    const t = config?.terminology || {};
+    const group = t.group || 'Group';
+    const unit = t.unit || 'Unit';
+    return {
+      group,
+      groupPlural: t.group_plural || group + 's',
+      unit,
+      unitPlural: t.unit_plural || unit + 's',
+    };
+  }
+
+  return { loadConfig, renderGitHubCorner, setDocumentTitle, siteTitle, addProgressBadges, escapeHtml, terminology };
 })();

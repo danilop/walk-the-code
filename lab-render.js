@@ -8,6 +8,10 @@ import { state, labId, COMMENT_RE } from './lab-state.js';
 
 const CODE_COACH_KEY = "wtc-code-coach-dismissed";
 
+let _onTourStart = null;
+/** @param {function():void} fn */
+export function setTourStartCallback(fn) { _onTourStart = fn; }
+
 /** @param {string} line @returns {boolean} */
 export function isComment(line) {
   return (COMMENT_RE[state.labLanguage] || COMMENT_RE.python).test(line);
@@ -27,8 +31,33 @@ export function ownerOf(lineNum) {
   return state.annotatedLines[0] || 1;
 }
 
+export function clearCode() {
+  const table = document.getElementById("code-table");
+  while (table.firstChild) table.removeChild(table.firstChild);
+}
+
+/** @param {function(string):void} onSwitch */
+export function renderFileTabs(onSwitch) {
+  if (state.labFiles.length <= 1) return;
+  const existing = document.querySelector('.file-tabs');
+  if (existing) existing.remove();
+  const bar = document.createElement('div');
+  bar.className = 'file-tabs';
+  state.labFiles.forEach(f => {
+    const tab = document.createElement('button');
+    tab.className = 'file-tab' + (f.path === state.currentFile ? ' active' : '');
+    tab.textContent = f.path.split('/').pop();
+    tab.title = f.path;
+    tab.onclick = () => { if (f.path !== state.currentFile) onSwitch(f.path); };
+    bar.appendChild(tab);
+  });
+  const codePanel = document.getElementById('code-panel');
+  codePanel.insertBefore(bar, codePanel.firstChild);
+}
+
 /** @param {string} code */
 export function renderCode(code) {
+  clearCode();
   const hl = hljs.highlight(code, { language: state.labLanguage, ignoreIllegals: true }).value;
   const table = document.getElementById("code-table");
   hl.split("\n").forEach((html, i) => {
@@ -36,7 +65,15 @@ export function renderCode(code) {
     tr.className = "code-line";
     if (state.staleLines.has(ln)) tr.classList.add("stale");
     tr.dataset.line = String(ln);
-    tr.innerHTML = `<td class="line-num">${ln}</td><td class="line-content">${html || " "}</td>`;
+    const key = String(ln);
+    let gutterCls = "line-num";
+    const exp = state.explanations[key];
+    if (exp) {
+      if (getExp(key, "diagram")) gutterCls += " has-diagram";
+      else if (typeof exp === "object" && exp.important) gutterCls += " has-important";
+      else gutterCls += " has-annotation";
+    }
+    tr.innerHTML = `<td class="${gutterCls}">${ln}</td><td class="line-content">${html || " "}</td>`;
     tr.addEventListener("click", () => selectLine(ownerOf(ln)));
     table.appendChild(tr);
   });
@@ -261,6 +298,7 @@ export function showOverview() {
   }
   if (ovHtml) {
     // Add reset progress link
+    ovHtml += `<button class="tour-start-btn" id="tour-start-btn">▶ Start Guided Tour</button>`;
     ovHtml += `<div class="reset-progress"><button class="reset-progress-btn" id="reset-progress-btn">Reset progress for this lab</button><button class="reset-progress-btn" id="show-tips-btn">Show tips again</button></div>`;
     ov.innerHTML = ovHtml;
     ov.querySelectorAll('.exercise-check').forEach(cb => {
@@ -286,6 +324,8 @@ export function showOverview() {
     }
     const showTipsBtn = document.getElementById("show-tips-btn");
     if (showTipsBtn) showTipsBtn.addEventListener("click", () => showCodeCoach());
+    const tourBtn = document.getElementById("tour-start-btn");
+    if (tourBtn) tourBtn.addEventListener("click", () => { if (_onTourStart) _onTourStart(); });
   } else {
     ov.innerHTML = '<div style="color:var(--text-muted);margin-top:40px;text-align:center">Click a line to see its explanation</div>';
   }
@@ -296,7 +336,14 @@ export function showOverview() {
 export function buildNav() {
   const nav = document.getElementById("nav-footer"), idx = state.allLabs.findIndex(l => l.id === labId);
   if (idx < 0) return;
-  const ch = state.allChapters.find(c => (c.labs || []).includes(labId));
+  function findChapter(chapters) {
+    for (const c of chapters) {
+      if ((c.labs || []).includes(labId)) return c;
+      if (c.chapters) { const found = findChapter(c.chapters); if (found) return found; }
+    }
+    return null;
+  }
+  const ch = findChapter(state.allChapters);
   if (ch) nav.innerHTML += `<a class="nav-link chapter" href="chapter.html?chapter=${ch.id}">${window.WTCSite.escapeHtml(ch.title)}</a>`;
   if (idx > 0) nav.innerHTML += `<a class="nav-link" href="lab.html?lab=${state.allLabs[idx - 1].id}">&larr; ${window.WTCSite.escapeHtml(state.allLabs[idx - 1].title)}</a>`;
   if (idx < state.allLabs.length - 1) nav.innerHTML += `<a class="nav-link" href="lab.html?lab=${state.allLabs[idx + 1].id}">${window.WTCSite.escapeHtml(state.allLabs[idx + 1].title)} &rarr;</a>`;

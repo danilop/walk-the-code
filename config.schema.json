@@ -38,6 +38,17 @@
       "default": ".",
       "description": "Path to the code directory, relative to config.json. Defaults to the current directory."
     },
+    "terminology": {
+      "type": "object",
+      "description": "Custom display names for the hierarchy levels. JSON keys (chapters, labs) stay the same; only UI labels change.",
+      "properties": {
+        "group": { "type": "string", "default": "Group", "description": "Singular name for a chapter-level grouping (e.g. Chapter, Module, Part)." },
+        "group_plural": { "type": "string", "description": "Plural form of group. Auto-derived by appending 's' to group if omitted." },
+        "unit": { "type": "string", "default": "Unit", "description": "Singular name for a lab-level item (e.g. Lab, Lesson, Component)." },
+        "unit_plural": { "type": "string", "description": "Plural form of unit. Auto-derived by appending 's' to unit if omitted." }
+      },
+      "additionalProperties": false
+    },
     "chapters": {
       "type": "array",
       "description": "Array of chapter objects that group labs into themed sections, each with its own page, description, and optional diagram.",
@@ -52,6 +63,10 @@
       "items": {
         "$ref": "#/$defs/lab"
       }
+    },
+    "analytics_file": {
+      "type": "string",
+      "description": "Path to an HTML file (relative to config.json) whose contents are injected before </body> on all pages. Use for analytics scripts."
     }
   },
   "required": ["labs"],
@@ -95,9 +110,16 @@
           "items": {
             "$ref": "#/$defs/knowledge_check"
           }
+        },
+        "chapters": {
+          "type": "array",
+          "description": "Nested sub-chapters. A chapter can have labs, sub-chapters, or both.",
+          "items": {
+            "$ref": "#/$defs/chapter"
+          }
         }
       },
-      "required": ["id", "title", "labs"],
+      "required": ["id", "title"],
       "additionalProperties": false
     },
     "lab": {
@@ -160,9 +182,25 @@
           "items": {
             "$ref": "#/$defs/exercise"
           }
+        },
+        "files": {
+          "type": "array",
+          "description": "Multi-file lab definition. When present, takes precedence over 'file'. The first entry with role 'primary' (or the first entry) is the default view.",
+          "items": {
+            "$ref": "#/$defs/lab_file_entry"
+          }
         }
       },
       "required": ["id", "file", "title"],
+      "additionalProperties": false
+    },
+    "lab_file_entry": {
+      "type": "object",
+      "properties": {
+        "path": { "type": "string", "description": "File path relative to the lab directory." },
+        "role": { "type": "string", "enum": ["primary", "supporting"], "default": "supporting", "description": "Role of the file. The primary file is shown by default." }
+      },
+      "required": ["path"],
       "additionalProperties": false
     },
     "knowledge_check": {

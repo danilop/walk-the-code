@@ -7,13 +7,22 @@ import tempfile
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from socketserver import ThreadingMixIn
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 from . import ASSETS_DIR
-from .config import CONTENT_TYPES, detect_language
+from .config import CONTENT_TYPES, detect_language, lab_files, primary_file
 
 
 _running: dict[str, subprocess.Popen] = {}
+
+
+def flatten_chapters(chapters):
+    """Recursively flatten nested chapters into a flat list."""
+    result = []
+    for ch in chapters:
+        result.append(ch)
+        result.extend(flatten_chapters(ch.get("chapters", [])))
+    return result
 
 
 class WTCHandler(SimpleHTTPRequestHandler):
@@ -45,7 +54,9 @@ class WTCHandler(SimpleHTTPRequestHandler):
         if self.path == "/api/labs":
             result = []
             for l in labs:
-                exp_path = config_dir / "comments" / l["id"] / f"{Path(l['file']).stem}.json"
+                lf = lab_files(l, default_lang)
+                pf = next((f for f in lf if f["role"] == "primary"), lf[0])
+                exp_path = config_dir / "comments" / l["id"] / f"{Path(pf['path']).stem}.json"
                 annotated = 0
                 if exp_path.exists():
                     try:
@@ -58,6 +69,7 @@ class WTCHandler(SimpleHTTPRequestHandler):
                     "learning_objectives": l.get("learning_objectives", []),
                     "exercises": l.get("exercises", []),
                     "file": l["file"], "language": l.get("language", detect_language(l["file"], default_lang)),
+                    "files": lf,
                     "annotated_lines": annotated,
                 })
             self._json(result)
@@ -66,26 +78,43 @@ class WTCHandler(SimpleHTTPRequestHandler):
                 "title": cfg.get("title", ""),
                 "tagline": cfg.get("tagline", ""),
                 "repo_url": cfg.get("repo_url", ""),
+                "terminology": cfg.get("terminology"),
             })
         elif self.path == "/api/chapters":
             self._json(cfg.get("chapters", []))
         elif self.path.startswith("/api/code/"):
-            lab_id = self.path[len("/api/code/"):]
+            parsed = urlparse(self.path)
+            lab_id = parsed.path[len("/api/code/"):]
+            qs = parse_qs(parsed.query)
             lab = next((l for l in labs if l["id"] == lab_id), None)
             if not lab:
                 return self._json({"error": "not found"}, 404)
-            p = code_dir / lab["id"] / lab["file"]
+            req_file = qs.get("file", [None])[0]
+            if req_file:
+                filename = req_file
+            else:
+                pf = primary_file(lab, default_lang)
+                filename = pf["path"]
+            p = code_dir / lab["id"] / filename
             if p.exists():
-                self._json({"code": p.read_text(), "filename": lab["file"],
-                             "language": lab.get("language", detect_language(lab["file"], default_lang))})
+                self._json({"code": p.read_text(), "filename": filename,
+                             "language": detect_language(filename, default_lang)})
             else:
                 self._json({"error": "file not found"}, 404)
         elif self.path.startswith("/api/explanations/"):
-            lab_id = self.path[len("/api/explanations/"):]
+            parsed = urlparse(self.path)
+            lab_id = parsed.path[len("/api/explanations/"):]
+            qs = parse_qs(parsed.query)
             lab = next((l for l in labs if l["id"] == lab_id), None)
             if not lab:
                 return self._json({})
-            p = config_dir / "comments" / lab["id"] / f"{Path(lab['file']).stem}.json"
+            req_file = qs.get("file", [None])[0]
+            if req_file:
+                stem = Path(req_file).stem
+            else:
+                pf = primary_file(lab, default_lang)
+                stem = Path(pf["path"]).stem
+            p = config_dir / "comments" / lab["id"] / f"{stem}.json"
             if p.exists():
                 try:
                     self._json(json.loads(p.read_text()))
@@ -105,9 +134,13 @@ class WTCHandler(SimpleHTTPRequestHandler):
         elif self.path.startswith("/api/stop/"):
             self._stop_lab(self.path[len("/api/stop/"):])
         elif self.path.split("?")[0] in ("/lab", "/lab.html", "/lab/"):
-            self._serve_asset("lab.html")
+            self._serve_asset("lab.html", frame_options="DENY")
         elif self.path.split("?")[0] in ("/chapter", "/chapter.html", "/chapter/"):
-            self._serve_asset("chapter.html")
+            self._serve_asset("chapter.html", frame_options="DENY")
+        elif self.path.split("?")[0] in ("/embed", "/embed.html", "/embed/"):
+            self._serve_asset("embed.html", embed=True)
+        elif self.path.split("?")[0] in ("/", "/index.html"):
+            self._serve_asset("index.html", frame_options="DENY")
         else:
             super().do_GET()
 
@@ -232,15 +265,42 @@ class WTCHandler(SimpleHTTPRequestHandler):
         else:
             self._json({"status": "not_running"})
 
-    def _serve_asset(self, filename):
+    # Cache for analytics snippet
+    _analytics_snippet = None
+    _analytics_loaded = False
+
+    @classmethod
+    def _load_analytics(cls):
+        if cls._analytics_loaded:
+            return cls._analytics_snippet
+        cls._analytics_loaded = True
+        cfg = cls.config or {}
+        af = cfg.get("analytics_file")
+        if af:
+            config_dir = Path(cfg.get("_config_dir", "."))
+            p = config_dir / af
+            if p.exists():
+                cls._analytics_snippet = p.read_text()
+        return cls._analytics_snippet
+
+    def _serve_asset(self, filename, frame_options=None, embed=False):
         filepath = ASSETS_DIR / filename
         if filepath.exists():
             content = filepath.read_bytes()
+            # Inject analytics before </body>
+            snippet = self._load_analytics()
+            if snippet and filename.endswith(".html"):
+                text = content.decode("utf-8")
+                content = text.replace("</body>", snippet + "</body>").encode("utf-8")
             ext = Path(filename).suffix
             ct = CONTENT_TYPES.get(ext, "application/octet-stream")
             self.send_response(200)
             self.send_header("Content-Type", ct)
             self.send_header("Content-Length", len(content))
+            if embed:
+                self.send_header("Content-Security-Policy", "frame-ancestors *")
+            elif frame_options:
+                self.send_header("X-Frame-Options", frame_options)
             self.end_headers()
             self.wfile.write(content)
         else:

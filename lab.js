@@ -4,14 +4,15 @@ import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.mi
 import { initTerminal } from './terminal.js';
 
 import { state, labId, lineHash } from './lab-state.js';
-import { loadServerData, loadStaticData } from './lab-data.js';
+import { loadServerData, loadStaticData, switchFile } from './lab-data.js';
 import {
   renderCode, buildAnnotatedLines, buildNav, selectLine,
   showOverview, updateProgress, setMermaidRef, selectAdjacentAnnotatedLine,
-  dismissCodeCoach, showCodeCoach,
+  dismissCodeCoach, showCodeCoach, renderFileTabs, clearCode, setTourStartCallback,
 } from './lab-render.js';
 import { initSearch } from './lab-search.js';
 import { initEditMode, showEditControls, getEditorCode } from './lab-edit.js';
+import { startTour, stopTour, advanceTour } from './lab-tour.js';
 
 // --- Global error handlers ---
 /** @param {string} msg */
@@ -64,7 +65,11 @@ document.addEventListener("keydown", e => {
   if (tag === "INPUT" || tag === "TEXTAREA" || /** @type {HTMLElement} */ (e.target).isContentEditable) return;
   if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); const btn = document.getElementById("play-btn"); if (btn && btn.style.display !== "none") btn.click(); return; }
   if (!state.annotatedLines.length) return;
-  if (e.key === "Escape") { e.preventDefault(); showOverview(); return; }
+  if (e.key === "Escape") { e.preventDefault(); if (state.tourActive) { stopTour(); } else { showOverview(); } return; }
+  if (state.tourActive) {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "j") { e.preventDefault(); advanceTour(1); return; }
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "k") { e.preventDefault(); advanceTour(-1); return; }
+  }
   if (state.selectedLine === null && (e.key === "ArrowDown" || e.key === "j")) { e.preventDefault(); selectAdjacentAnnotatedLine(1); return; }
   if (state.selectedLine === null) return;
   if (e.key === "ArrowDown" || e.key === "j") { e.preventDefault(); selectAdjacentAnnotatedLine(1); }
@@ -106,7 +111,10 @@ document.addEventListener("keydown", e => {
   if (labMeta) {
     document.getElementById("lab-title").textContent = labMeta.title;
     document.getElementById("lab-tagline").textContent = labMeta.tagline || "";
-    window.WTCSite.setDocumentTitle(labMeta.title, await window.WTCSite.loadConfig());
+    const cfg = await window.WTCSite.loadConfig();
+    window.WTCSite.setDocumentTitle(labMeta.title, cfg);
+    const terms = window.WTCSite.terminology(cfg);
+    document.getElementById("back-link").textContent = `\u2190 ${terms.unitPlural}`;
   }
   state.explanations = expData || {};
   state.codeLines = codeText.split("\n");
@@ -124,6 +132,18 @@ document.addEventListener("keydown", e => {
   updateProgress();
   document.getElementById("code-panel").scrollTop = 0;
   showOverview();
+  setTourStartCallback(() => startTour());
+  const { params } = await import('./lab-state.js');
+  if (params.get('tour') === 'true') startTour();
+  const handleFileSwitch = async (filename) => {
+    const { codeText } = await switchFile(filename);
+    renderCode(codeText);
+    buildAnnotatedLines();
+    showOverview();
+    updateProgress();
+    renderFileTabs(handleFileSwitch);
+  };
+  renderFileTabs(handleFileSwitch);
   if (state.staleLines.size > 0) { const t = document.createElement("span"); t.className = "stale-warning"; t.innerHTML = `<span class="stale-dot"></span>${state.staleLines.size} annotation${state.staleLines.size > 1 ? "s" : ""} may be outdated`; document.querySelector(".lab-header").appendChild(t); }
   initEditMode(codeText, () => showOverview());
   initTerminal(labId, state.serverMode, { getModifiedCode: getEditorCode });

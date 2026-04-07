@@ -4,13 +4,14 @@ import json
 import sys
 from pathlib import Path
 
-from .config import _line_hash, load_config
+from .config import _line_hash, detect_language, lab_files, load_config
 
 
 def validate():
-    """CLI entry point: wtc-validate [config_path] — check project for errors."""
+    """CLI entry point: wtc-validate [--strict] [config_path] — check project for errors."""
     args = sys.argv[1:]
     config_path = "config.json"
+    strict = "--strict" in args
     for arg in args:
         if not arg.startswith("-"):
             config_path = arg
@@ -75,7 +76,7 @@ def validate():
             elif not ex.get("prompt"):
                 warnings.append(f"{prefix}: exercises[{j}] has no 'prompt' field")
 
-        # Comment file validation
+        # Comment file validation (primary file - backward compat)
         stem = Path(lab.get("file", "x")).stem
         comment_path = config_dir / "comments" / lab_id / f"{stem}.json"
         explanations = {}
@@ -89,95 +90,133 @@ def validate():
                 errors.append(f"{prefix}: invalid JSON in {comment_path.name}: {exc}")
         # Note: missing comment file is not an error — lab may not have annotations yet
 
-        # Line number range and hash checks (only if code exists)
-        if code_path.exists() and explanations:
-            code_text = code_path.read_text()
-            code_lines = code_text.split("\n")
-            total_lines = len(code_lines)
-
-            for line_str, entry in explanations.items():
+        # Multi-file validation
+        default_lang = config.get("language", "python")
+        lf = lab_files(lab, default_lang)
+        all_file_explanations = {}  # path -> explanations dict
+        for fe in lf:
+            fpath = code_dir / lab_id / fe["path"]
+            if not fpath.exists():
+                errors.append(f"{prefix}: file '{fe['path']}' not found: {fpath}")
+            fstem = Path(fe["path"]).stem
+            fcomment = config_dir / "comments" / lab_id / f"{fstem}.json"
+            fexp = {}
+            if fcomment.exists():
                 try:
-                    line_num = int(line_str)
-                except ValueError:
-                    errors.append(f"{prefix}: non-integer key '{line_str}' in comments")
-                    continue
+                    fexp = json.loads(fcomment.read_text())
+                    if not isinstance(fexp, dict):
+                        errors.append(f"{prefix}: comment file {fcomment.name} is not a JSON object")
+                        fexp = {}
+                except json.JSONDecodeError as exc:
+                    errors.append(f"{prefix}: invalid JSON in {fcomment.name}: {exc}")
+            all_file_explanations[fe["path"]] = (fpath, fexp)
 
-                if line_num < 1 or line_num > total_lines:
-                    errors.append(
-                        f"{prefix}: annotation for line {line_num} but code has only {total_lines} lines"
-                    )
+        # Line number range and hash checks for all files
+        for fpath_str, (fpath, fexp) in all_file_explanations.items():
+            if fpath.exists() and fexp:
+                code_text = fpath.read_text()
+                code_lines = code_text.split("\n")
+                total_lines = len(code_lines)
 
-                if (
-                    isinstance(entry, dict)
-                    and entry.get("text")
-                    and 1 <= line_num <= total_lines
-                    and not code_lines[line_num - 1].strip()
-                ):
-                    warnings.append(
-                        f"{prefix}: line {line_num} annotation is attached to a blank line"
-                    )
+                for line_str, entry in fexp.items():
+                    try:
+                        line_num = int(line_str)
+                    except ValueError:
+                        errors.append(f"{prefix} ({fpath_str}): non-integer key '{line_str}' in comments")
+                        continue
 
-                # Diagram references
-                if isinstance(entry, dict) and entry.get("diagram"):
-                    diag_id = entry["diagram"]
-                    diag_path = config_dir / "diagrams" / f"{diag_id}.mmd"
-                    if not diag_path.exists():
+                    if line_num < 1 or line_num > total_lines:
                         errors.append(
-                            f"{prefix}: line {line_num} references diagram '{diag_id}' "
-                            f"but {diag_path.name} not found"
+                            f"{prefix} ({fpath_str}): annotation for line {line_num} but code has only {total_lines} lines"
                         )
 
-                # Hash freshness
-                if isinstance(entry, dict) and entry.get("hash") and 1 <= line_num <= total_lines:
-                    expected = _line_hash(code_lines[line_num - 1])
-                    if entry["hash"] != expected:
+                    if (
+                        isinstance(entry, dict)
+                        and entry.get("text")
+                        and 1 <= line_num <= total_lines
+                        and not code_lines[line_num - 1].strip()
+                    ):
                         warnings.append(
-                            f"{prefix}: line {line_num} hash mismatch (annotation may be stale)"
+                            f"{prefix} ({fpath_str}): line {line_num} annotation is attached to a blank line"
                         )
 
-        # Track coverage data
-        if code_path.exists():
-            cov_text = code_text if (code_path.exists() and explanations) else code_path.read_text()
-            total_for_cov = len(cov_text.split("\n"))
-            annotated_for_cov = sum(1 for key in explanations if str(key).isdigit())
-            coverage_data.append((lab_id, annotated_for_cov, total_for_cov))
+                    if isinstance(entry, dict) and entry.get("diagram"):
+                        diag_id = entry["diagram"]
+                        diag_path = config_dir / "diagrams" / f"{diag_id}.mmd"
+                        if not diag_path.exists():
+                            errors.append(
+                                f"{prefix} ({fpath_str}): line {line_num} references diagram '{diag_id}' "
+                                f"but {diag_path.name} not found"
+                            )
+
+                    if isinstance(entry, dict) and entry.get("hash") and 1 <= line_num <= total_lines:
+                        expected = _line_hash(code_lines[line_num - 1])
+                        if entry["hash"] != expected:
+                            warnings.append(
+                                f"{prefix} ({fpath_str}): line {line_num} hash mismatch (annotation may be stale)"
+                            )
+
+        # Track coverage data per file
+        for fpath_str, (fpath, fexp) in all_file_explanations.items():
+            if fpath.exists():
+                cov_text = fpath.read_text()
+                total_for_cov = len(cov_text.split("\n"))
+                annotated_for_cov = sum(1 for key in fexp if str(key).isdigit())
+                label = f"{lab_id}/{fpath_str}" if len(all_file_explanations) > 1 else lab_id
+                coverage_data.append((label, annotated_for_cov, total_for_cov))
 
         labs_validated += 1
 
-    # --- Chapter references ---
-    for ch in config.get("chapters", []):
-        ch_id = ch.get("id", "?")
-        for lab_id in ch.get("labs", []):
-            if lab_id not in all_lab_ids:
-                errors.append(
-                    f"chapter '{ch_id}': references lab '{lab_id}' which is not defined"
-                )
-        comp_diag = ch.get("comparison_diagram")
-        if comp_diag:
-            diag_path = config_dir / "diagrams" / f"{comp_diag}.mmd"
-            if not diag_path.exists():
-                errors.append(
-                    f"chapter '{ch_id}': comparison_diagram '{comp_diag}' not found in diagrams/"
-                )
+    # --- Validate analytics_file ---
+    af = config.get("analytics_file")
+    if af:
+        af_path = config_dir / af
+        if not af_path.exists():
+            errors.append(f"analytics_file '{af}' not found: {af_path}")
+        else:
+            af_content = af_path.read_text()
+            import re as _re
+            for m in _re.finditer(r'<script[^>]*\bsrc=["\']?(http://[^"\'>\s]+)', af_content):
+                warnings.append(f"analytics_file: script references non-HTTPS URL: {m.group(1)}")
 
-    # --- Knowledge checks ---
-    for ch in config.get("chapters", []):
-        ch_id = ch.get("id", "?")
-        for qi, check in enumerate(ch.get("knowledge_checks", [])):
-            prefix = f"chapter '{ch_id}' knowledge_checks[{qi}]"
-            if not isinstance(check, dict):
-                errors.append(f"{prefix}: must be an object")
-                continue
-            if not check.get("question"):
-                errors.append(f"{prefix}: missing 'question'")
-            opts = check.get("options", [])
-            if not isinstance(opts, list) or len(opts) < 2:
-                errors.append(f"{prefix}: 'options' must be an array with at least 2 items")
-            correct = check.get("correct")
-            if not isinstance(correct, int) or correct < 0 or correct >= len(opts):
-                errors.append(f"{prefix}: 'correct' must be an integer index into options")
-            if not check.get("explanation"):
-                errors.append(f"{prefix}: missing 'explanation'")
+    # --- Chapter references (recursive) ---
+    all_chapter_ids = set()
+    def _validate_chapters(chs):
+        for ch in chs:
+            ch_id = ch.get("id", "?")
+            if ch_id in all_chapter_ids:
+                errors.append(f"Duplicate chapter ID: '{ch_id}'")
+            all_chapter_ids.add(ch_id)
+            for lab_id in ch.get("labs", []):
+                if lab_id not in all_lab_ids:
+                    errors.append(
+                        f"chapter '{ch_id}': references lab '{lab_id}' which is not defined"
+                    )
+            comp_diag = ch.get("comparison_diagram")
+            if comp_diag:
+                diag_path = config_dir / "diagrams" / f"{comp_diag}.mmd"
+                if not diag_path.exists():
+                    errors.append(
+                        f"chapter '{ch_id}': comparison_diagram '{comp_diag}' not found in diagrams/"
+                    )
+            # Knowledge checks
+            for qi, check in enumerate(ch.get("knowledge_checks", [])):
+                kprefix = f"chapter '{ch_id}' knowledge_checks[{qi}]"
+                if not isinstance(check, dict):
+                    errors.append(f"{kprefix}: must be an object")
+                    continue
+                if not check.get("question"):
+                    errors.append(f"{kprefix}: missing 'question'")
+                opts = check.get("options", [])
+                if not isinstance(opts, list) or len(opts) < 2:
+                    errors.append(f"{kprefix}: 'options' must be an array with at least 2 items")
+                correct = check.get("correct")
+                if not isinstance(correct, int) or correct < 0 or correct >= len(opts):
+                    errors.append(f"{kprefix}: 'correct' must be an integer index into options")
+                if not check.get("explanation"):
+                    errors.append(f"{kprefix}: missing 'explanation'")
+            _validate_chapters(ch.get("chapters", []))
+    _validate_chapters(config.get("chapters", []))
 
     # --- Summary ---
     print(f"\nwalk-the-code validate: {config_path}\n")
@@ -211,6 +250,14 @@ def validate():
             warnings.append(f"Overall annotation coverage is {overall_pct}% (below 50%)")
             print(f"    ~ Warning: overall annotation coverage is below 50%")
         print()
+
+    # --- Strict mode: promote stale hashes to errors ---
+    if strict:
+        stale = [w for w in warnings if "hash mismatch" in w]
+        if stale:
+            for w in stale:
+                warnings.remove(w)
+                errors.append(w.replace("(annotation may be stale)", "(stale — fails in --strict mode)"))
 
     status = "PASS" if not errors else "FAIL"
     print(f"  Result: {status} — {len(errors)} error(s), {len(warnings)} warning(s), "
