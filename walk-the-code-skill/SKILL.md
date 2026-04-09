@@ -56,6 +56,17 @@ Check if `config.json` exists in the walk-the-code directory.
 2. Write `config.json` directly with the real project structure — do NOT use `wtc-init` (that creates a hello-world scaffold meant for manual authoring)
 3. For multi-file labs, use the `files` array; for single-file labs, use `file`
 4. Set `code_dir` to point at the source code relative to config.json
+5. Create `walk-the-code/start.sh` so the user can launch the walkthrough with `./walk-the-code/start.sh`:
+   ```bash
+   #!/usr/bin/env bash
+   set -e
+   PORT="${1:-8000}"
+   CONFIG="$(cd "$(dirname "$0")" && pwd)/config.json"
+   echo "Opening walkthrough at http://localhost:$PORT"
+   (sleep 1 && python3 -m webbrowser "http://localhost:$PORT") &
+   exec wtc-serve --config "$CONFIG" "$PORT"
+   ```
+   Make it executable (`chmod +x`).
 
 **If updating after code changes:**
 1. Run `wtc-validate path/to/config.json` to find stale annotations and coverage gaps
@@ -142,7 +153,7 @@ For chapters, add `knowledge_checks` — multiple-choice questions that test con
 
 ### Step 8: Preview
 
-Run `wtc-serve --config path/to/config.json` and verify:
+Tell the user to run `./walk-the-code/start.sh` — it starts the server and opens the browser automatically. Then verify:
 - Annotations appear on the correct lines
 - Diagrams render and highlights work
 - Navigation between labs and chapters is logical

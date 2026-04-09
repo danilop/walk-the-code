@@ -13,12 +13,12 @@ The hierarchy levels (chapters/labs) can be renamed to fit your domain — for e
 3. Follow the 8-step workflow in the skill guide:
    - Assess the codebase (identify core files, entry points, data flow)
    - Design the walkthrough structure (grouping, ordering, diagrams)
-   - Create or update config.json, comments/, and diagrams/
+   - Create or update config.json, comments/, diagrams/, and a start.sh launcher
    - Write annotations that explain WHY, not WHAT
    - Create reusable Mermaid diagrams with per-line node highlighting
    - Add learning objectives and exercises
    - Run add_hashes.py and wtc-validate
-   - Preview with wtc-serve
+   - Preview with ./walk-the-code/start.sh
 
 ## Key quality rules
 
