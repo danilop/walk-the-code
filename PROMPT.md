@@ -26,4 +26,5 @@ The hierarchy levels (chapters/labs) can be renamed to fit your domain — for e
 - Mark only 10-15% of annotated lines as `important` (architectural boundaries)
 - Target 30-60% annotation coverage (not every line needs a comment)
 - Design 2-4 diagrams that are reused across many lines with different highlights
+- Do not add custom colors or styles to diagrams (no `style`, `classDef`, `:::`, or `fill:`/`color:`) — the tool applies its own theme
 - Order content for learning, not for the file system

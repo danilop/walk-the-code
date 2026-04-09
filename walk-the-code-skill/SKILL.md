@@ -125,6 +125,8 @@ Then in annotations:
 
 **Diagram types:** data flow (`graph LR`), architecture (`graph TD`), sequence (`sequenceDiagram`), state (`stateDiagram-v2`).
 
+**Do not add custom colors or styles.** No `style`, `classDef`, `:::`, or `fill:`/`color:` directives. Walk-the-code applies its own dark theme — custom colors cause unreadable text (e.g. light text on light backgrounds). Write plain Mermaid and let the theme handle it.
+
 ### Step 6: Add learning objectives and exercises
 
 For each lab, add `learning_objectives` (2-4 concrete outcomes).
