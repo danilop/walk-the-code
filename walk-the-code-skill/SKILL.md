@@ -1,11 +1,10 @@
 ---
 name: walk-the-code-skill
 description: >
-  Generate and maintain interactive code walkthroughs for any codebase using walk-the-code.
-  Creates line-by-line annotations, Mermaid diagrams with per-line node highlighting, chapters,
-  guided tours, exercises, and static GitHub Pages deployment. Use when the user asks to create
-  a code walkthrough, tutorial, or visual explanation for a repository, or to update existing
-  walk-the-code annotations after code changes.
+  Create or update interactive code walkthroughs for any codebase using walk-the-code.
+  Produces line-by-line annotations, Mermaid diagrams with per-line highlighting, guided tours,
+  exercises, and static GitHub Pages deployment. Use when the user asks to create, update,
+  or maintain a code walkthrough or annotated explanation for a repository.
 compatibility: Requires Python 3.11+ and uv. Optionally requires git for deployment workflows.
 metadata:
   author: danilop
@@ -13,9 +12,9 @@ metadata:
   source: https://github.com/danilop/walk-the-code
 ---
 
-# Walk the Code — Tutorial Generation
+# Walk the Code — Code Walkthrough Generation
 
-Generate and maintain interactive code walkthroughs for any codebase using [walk-the-code](https://github.com/danilop/walk-the-code). The output is a web tutorial where readers click code lines to see explanations, diagrams highlight relevant nodes as they navigate, and guided tours walk through key concepts.
+Create or update interactive code walkthroughs for any codebase using [walk-the-code](https://github.com/danilop/walk-the-code). The output is a web-based explanation where readers click code lines to see annotations, diagrams highlight relevant nodes as they navigate, and guided tours walk through key concepts. The hierarchy labels (chapters/labs) are customizable via the `terminology` field in config.json — for example "Modules/Lessons" or "Parts/Steps".
 
 For exact config schema, comment format, diagram syntax, and CLI commands, read the walk-the-code README:
 https://github.com/danilop/walk-the-code/blob/main/README.md
@@ -33,7 +32,7 @@ Read the repository structure. Identify:
 - **Data flow** — how data moves through the system (input → processing → output)
 - **Dependencies between files** — which files call/import which
 
-### Step 2: Design the tutorial structure
+### Step 2: Design the walkthrough structure
 
 Before writing any annotations, plan the structure:
 

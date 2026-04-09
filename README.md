@@ -41,7 +41,7 @@ Two files support AI agents — choose based on your agent's capabilities:
 | File | Format | When to use |
 |---|---|---|
 | [`walk-the-code-skill/SKILL.md`](walk-the-code-skill/SKILL.md) | [Agent Skill](https://agentskills.io/) (YAML frontmatter + instructions) | Your agent supports skills — install it once, the agent activates it automatically when relevant |
-| [`PROMPT.md`](PROMPT.md) | Plain prompt linking to the skill and README | Your agent doesn't support skills, or you want a one-off generation without installing anything |
+| [`PROMPT.md`](PROMPT.md) | Plain prompt linking to the skill and README | Your agent doesn't support skills, or you want a one-off walkthrough without installing anything |
 
 ## Quick start
 
