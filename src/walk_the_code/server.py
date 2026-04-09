@@ -79,6 +79,7 @@ class WTCHandler(SimpleHTTPRequestHandler):
                 "tagline": cfg.get("tagline", ""),
                 "repo_url": cfg.get("repo_url", ""),
                 "terminology": cfg.get("terminology"),
+                "show_credits": cfg.get("show_credits", True),
             })
         elif self.path == "/api/chapters":
             self._json(cfg.get("chapters", []))

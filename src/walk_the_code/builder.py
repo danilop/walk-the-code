@@ -143,6 +143,7 @@ def build():
             "tagline": config.get("tagline", ""),
             "repo_url": config.get("repo_url", ""),
             "terminology": config.get("terminology"),
+            "show_credits": config.get("show_credits", True),
         },
         "labs": labs, "diagrams": diagrams, "chapters": chapters,
     }

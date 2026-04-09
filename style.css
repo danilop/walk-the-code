@@ -247,3 +247,10 @@ code{background:var(--surface);border:1px solid var(--border);border-radius:4px;
 /* --- Embed mode --- */
 .embed-mode{overflow:hidden}
 .embed-mode .lab-main{height:100vh}
+
+/* --- Credits footer --- */
+.wtc-credits{text-align:center;padding:16px 12px;font-size:.75rem;color:var(--text-muted);letter-spacing:.01em}
+.wtc-credits a{color:var(--text-muted);text-decoration:none;border-bottom:1px solid transparent;transition:color .15s,border-color .15s}
+.wtc-credits a:hover{color:var(--accent);border-bottom-color:var(--accent);text-decoration:none}
+.embed-mode .wtc-credits{position:fixed;bottom:0;right:8px;padding:4px 8px;text-align:right;background:var(--bg);opacity:.6;font-size:.65rem}
+.embed-mode .wtc-credits:hover{opacity:1}

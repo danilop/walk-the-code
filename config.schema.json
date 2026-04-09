@@ -67,6 +67,11 @@
     "analytics_file": {
       "type": "string",
       "description": "Path to an HTML file (relative to config.json) whose contents are injected before </body> on all pages. Use for analytics scripts."
+    },
+    "show_credits": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show a 'Generated with walk-the-code' footer on all pages. Defaults to true. Set to false to hide the visible footer (the <meta name=\"generator\"> tag is always present)."
     }
   },
   "required": ["labs"],

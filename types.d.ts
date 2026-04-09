@@ -72,6 +72,8 @@ interface SiteConfig {
   tagline?: string;
   repo_url?: string;
   terminology?: Terminology;
+  show_credits?: boolean;
+  analytics_snippet?: string;
 }
 
 /** Static bundle from data/labs.json */

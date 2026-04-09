@@ -21,6 +21,23 @@ window.WTCSite = (() => {
     }
   }
 
+  function _injectCredits() {
+    // Always add meta generator tag
+    if (!document.querySelector('meta[name="generator"]')) {
+      const meta = document.createElement('meta');
+      meta.name = 'generator';
+      meta.content = 'walk-the-code';
+      document.head.appendChild(meta);
+    }
+    // Add visible footer unless show_credits is explicitly false
+    if (cachedConfig && cachedConfig.show_credits === false) return;
+    if (document.querySelector('.wtc-credits')) return;
+    const footer = document.createElement('div');
+    footer.className = 'wtc-credits';
+    footer.innerHTML = 'Generated with <a href="https://github.com/danilop/walk-the-code" target="_blank" rel="noreferrer">walk-the-code</a>';
+    document.body.appendChild(footer);
+  }
+
   /** @returns {Promise<SiteConfig>} */
   async function loadConfig() {
     if (cachedConfig) return cachedConfig;
@@ -28,6 +45,7 @@ window.WTCSite = (() => {
       const response = await fetch("/api/config");
       if (response.ok) {
         cachedConfig = await response.json();
+        _injectCredits();
         return cachedConfig;
       }
     } catch (e) {}
@@ -36,9 +54,11 @@ window.WTCSite = (() => {
       const bundle = await response.json();
       cachedConfig = bundle.config || {};
       _injectAnalytics();
+      _injectCredits();
       return cachedConfig;
     } catch (e) {
       cachedConfig = {};
+      _injectCredits();
       return cachedConfig;
     }
   }
