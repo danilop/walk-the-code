@@ -1,37 +1,37 @@
 // @ts-check
 
 /**
- * Shared state and constants for the lab viewer.
+ * Shared state and constants for the unit viewer.
  * State is exported as a mutable object so mutations are visible across modules.
  */
 
 const params = new URLSearchParams(location.search);
-const labId = params.get("lab");
+const unitId = params.get("unit");
 
-/** @type {{ explanations: Record<string, Explanation|string>, codeLines: string[], selectedLine: number|null, staleLines: Set<number>, serverMode: boolean, labLanguage: string, annotatedLines: number[], diagrams: Record<string, string>, visitedLines: Set<number>, completedExercises: Set<number>, allLabs: Lab[], allChapters: Chapter[], labDescription: string, labObjectives: string[], labExercises: Exercise[], labFiles: {path:string, language:string, role:string}[], currentFile: string|null }} */
+/** @type {{ explanations: Record<string, Explanation|string>, codeLines: string[], selectedLine: number|null, staleLines: Set<number>, serverMode: boolean, unitLanguage: string, annotatedLines: number[], diagrams: Record<string, string>, visitedLines: Set<number>, completedExercises: Set<number>, allUnits: Unit[], allGroups: Group[], unitDescription: string, unitObjectives: string[], unitExercises: Exercise[], unitFiles: {path:string, language:string, role:string}[], currentFile: string|null }} */
 export const state = {
   explanations: {},
   codeLines: [],
   selectedLine: null,
   staleLines: new Set(),
   serverMode: false,
-  labLanguage: "python",
+  unitLanguage: "python",
   annotatedLines: [],
   diagrams: {},
   visitedLines: new Set(),
   completedExercises: new Set(),
-  allLabs: [],
-  allChapters: [],
-  labDescription: "",
-  labObjectives: [],
-  labExercises: [],
-  labFiles: [],
+  allUnits: [],
+  allGroups: [],
+  unitDescription: "",
+  unitObjectives: [],
+  unitExercises: [],
+  unitFiles: [],
   currentFile: null,
   tourActive: false,
   tourIndex: -1,
 };
 
-export { labId, params };
+export { unitId, params };
 
 /** @type {Record<string, RegExp>} */
 export const COMMENT_RE = {

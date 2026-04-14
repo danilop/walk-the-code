@@ -6,7 +6,7 @@
  * textarea over a highlight.js-rendered <pre>) and line numbers.
  */
 
-import { state, labId } from './lab-state.js';
+import { state, unitId } from './unit-state.js';
 
 /** @type {string} */
 let originalCode = "";
@@ -44,7 +44,7 @@ export function showEditControls() {
 /** Sync highlighted <pre> content with the textarea value */
 function syncHighlight(editor, highlight) {
   const code = editor.value;
-  const rendered = hljs.highlight(code + "\n", { language: state.labLanguage, ignoreIllegals: true }).value;
+  const rendered = hljs.highlight(code + "\n", { language: state.unitLanguage, ignoreIllegals: true }).value;
   highlight.innerHTML = rendered;
 }
 

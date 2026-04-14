@@ -50,7 +50,7 @@ window.WTCSite = (() => {
       }
     } catch (e) {}
     try {
-      const response = await fetch("data/labs.json");
+      const response = await fetch("data/units.json");
       const bundle = await response.json();
       cachedConfig = bundle.config || {};
       _injectAnalytics();
@@ -89,31 +89,31 @@ window.WTCSite = (() => {
     document.title = pageTitle ? `${pageTitle} — ${siteTitle(config)}` : siteTitle(config);
   }
 
-  /** @param {Lab[]} labs */
-  function addProgressBadges(labs) {
-    const labAnnotations = {};
-    if (Array.isArray(labs)) {
-      labs.forEach(l => { if (l.annotated_lines) labAnnotations[l.id] = l.annotated_lines; });
+  /** @param {Unit[]} units */
+  function addProgressBadges(units) {
+    const unitAnnotations = {};
+    if (Array.isArray(units)) {
+      units.forEach(l => { if (l.annotated_lines) unitAnnotations[l.id] = l.annotated_lines; });
     }
-    document.querySelectorAll(".lab-item").forEach(li => {
+    document.querySelectorAll(".unit-item").forEach(li => {
       const a = li.querySelector("a");
       if (!a) return;
       const u = new URL(a.href, location.href);
-      const labId = u.searchParams.get("lab");
-      if (!labId) return;
-      const visited = localStorage.getItem(`wtc-visited-${labId}`);
-      const exercises = localStorage.getItem(`wtc-exercises-${labId}`);
+      const unitId = u.searchParams.get("unit");
+      if (!unitId) return;
+      const visited = localStorage.getItem(`wtc-visited-${unitId}`);
+      const exercises = localStorage.getItem(`wtc-exercises-${unitId}`);
       if (!visited && !exercises) return;
       let visitedCount = 0;
       if (visited) {
         try { const v = JSON.parse(visited); visitedCount = Array.isArray(v) ? v.length : Object.keys(v).length; } catch(e) {}
       }
       if (visitedCount === 0 && !exercises) return;
-      const total = labAnnotations[labId] || 0;
+      const total = unitAnnotations[unitId] || 0;
       const pct = total > 0 ? Math.min(100, Math.round((visitedCount / total) * 100)) : 0;
       const parts = [];
       if (total > 0 && pct > 0) {
-        parts.push(`<div class="lab-progress-bar"><div class="lab-progress-fill" style="width:${pct}%"></div></div><span>${pct}%</span>`);
+        parts.push(`<div class="unit-progress-bar"><div class="unit-progress-fill" style="width:${pct}%"></div></div><span>${pct}%</span>`);
       } else if (visitedCount > 0) {
         parts.push(`<span>In progress</span>`);
       }
@@ -126,7 +126,7 @@ window.WTCSite = (() => {
       }
       if (parts.length === 0) return;
       const badge = document.createElement("div");
-      badge.className = "lab-progress";
+      badge.className = "unit-progress";
       badge.innerHTML = parts.join("");
       const div = a.querySelector("div");
       if (div) div.appendChild(badge);

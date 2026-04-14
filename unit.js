@@ -3,16 +3,16 @@
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
 import { initTerminal } from './terminal.js';
 
-import { state, labId, lineHash } from './lab-state.js';
-import { loadServerData, loadStaticData, switchFile } from './lab-data.js';
+import { state, unitId, lineHash } from './unit-state.js';
+import { loadServerData, loadStaticData, switchFile } from './unit-data.js';
 import {
   renderCode, buildAnnotatedLines, buildNav, selectLine,
   showOverview, updateProgress, setMermaidRef, selectAdjacentAnnotatedLine,
   dismissCodeCoach, showCodeCoach, renderFileTabs, clearCode, setTourStartCallback,
-} from './lab-render.js';
-import { initSearch } from './lab-search.js';
-import { initEditMode, showEditControls, getEditorCode } from './lab-edit.js';
-import { startTour, stopTour, advanceTour } from './lab-tour.js';
+} from './unit-render.js';
+import { initSearch } from './unit-search.js';
+import { initEditMode, showEditControls, getEditorCode } from './unit-edit.js';
+import { startTour, stopTour, advanceTour } from './unit-tour.js';
 
 // --- Global error handlers ---
 /** @param {string} msg */
@@ -78,7 +78,7 @@ document.addEventListener("keydown", e => {
 
 // --- Resize handles ---
 (function () {
-  const h = document.getElementById("h-resize"), ep = document.getElementById("explain-panel"), main = document.querySelector(".lab-main");
+  const h = document.getElementById("h-resize"), ep = document.getElementById("explain-panel"), main = document.querySelector(".unit-main");
   let startX, startW;
   h.addEventListener("mousedown", e => { e.preventDefault(); startX = e.clientX; startW = ep.offsetWidth; h.classList.add("dragging"); document.addEventListener("mousemove", drag); document.addEventListener("mouseup", up); });
   function drag(e) { ep.style.width = Math.max(200, Math.min(main.offsetWidth * 0.7, startW - (e.clientX - startX))) + "px"; }
@@ -95,24 +95,24 @@ document.addEventListener("keydown", e => {
     const msg = isNetwork
       ? 'Unable to connect to the server. Please check your network connection and try again.'
       : (serverError || staticError)
-        ? `Failed to load lab data: ${(staticError || serverError).message || 'Unknown error'}`
-        : 'Lab not found. The requested lab does not exist.';
-    document.body.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-muted)"><h2 style="margin-bottom:12px;color:var(--text)">${isNetwork ? 'Connection Error' : 'Lab Not Found'}</h2><p>${msg}</p><a href="${state.serverMode ? '/' : 'index.html'}" style="display:inline-block;margin-top:16px;color:var(--accent)">Back to labs</a></div>`;
+        ? `Failed to load unit data: ${(staticError || serverError).message || 'Unknown error'}`
+        : 'Unit not found. The requested unit does not exist.';
+    document.body.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-muted)"><h2 style="margin-bottom:12px;color:var(--text)">${isNetwork ? 'Connection Error' : 'Unit Not Found'}</h2><p>${msg}</p><a href="${state.serverMode ? '/' : 'index.html'}" style="display:inline-block;margin-top:16px;color:var(--accent)">Back to units</a></div>`;
     return;
   }
 
-  const { labMeta, codeText, expData } = data;
+  const { unitMeta, codeText, expData } = data;
   if (state.serverMode) {
     document.getElementById("play-btn").style.display = "inline-flex";
     showEditControls();
   } else {
     const hint = document.getElementById("run-hint"); if (hint) hint.style.display = "inline-flex";
   }
-  if (labMeta) {
-    document.getElementById("lab-title").textContent = labMeta.title;
-    document.getElementById("lab-tagline").textContent = labMeta.tagline || "";
+  if (unitMeta) {
+    document.getElementById("unit-title").textContent = unitMeta.title;
+    document.getElementById("unit-tagline").textContent = unitMeta.tagline || "";
     const cfg = await window.WTCSite.loadConfig();
-    window.WTCSite.setDocumentTitle(labMeta.title, cfg);
+    window.WTCSite.setDocumentTitle(unitMeta.title, cfg);
     const terms = window.WTCSite.terminology(cfg);
     document.getElementById("back-link").textContent = `\u2190 ${terms.unitPlural}`;
   }
@@ -127,13 +127,13 @@ document.addEventListener("keydown", e => {
   renderCode(codeText);
   buildAnnotatedLines();
   buildNav();
-  try { const savedEx = localStorage.getItem(`wtc-exercises-${labId}`); if (savedEx) state.completedExercises = new Set(JSON.parse(savedEx)); } catch (e) { /* ignore */ }
-  try { const saved = localStorage.getItem(`wtc-visited-${labId}`); if (saved) { state.visitedLines = new Set(JSON.parse(saved)); state.visitedLines.forEach(ln => { const r = document.querySelector(`.code-line[data-line="${ln}"]`); if (r) r.classList.add("visited"); }); } } catch (e) { /* ignore */ }
+  try { const savedEx = localStorage.getItem(`wtc-exercises-${unitId}`); if (savedEx) state.completedExercises = new Set(JSON.parse(savedEx)); } catch (e) { /* ignore */ }
+  try { const saved = localStorage.getItem(`wtc-visited-${unitId}`); if (saved) { state.visitedLines = new Set(JSON.parse(saved)); state.visitedLines.forEach(ln => { const r = document.querySelector(`.code-line[data-line="${ln}"]`); if (r) r.classList.add("visited"); }); } } catch (e) { /* ignore */ }
   updateProgress();
   document.getElementById("code-panel").scrollTop = 0;
   showOverview();
   setTourStartCallback(() => startTour());
-  const { params } = await import('./lab-state.js');
+  const { params } = await import('./unit-state.js');
   if (params.get('tour') === 'true') startTour();
   const handleFileSwitch = async (filename) => {
     const { codeText } = await switchFile(filename);
@@ -144,9 +144,9 @@ document.addEventListener("keydown", e => {
     renderFileTabs(handleFileSwitch);
   };
   renderFileTabs(handleFileSwitch);
-  if (state.staleLines.size > 0) { const t = document.createElement("span"); t.className = "stale-warning"; t.innerHTML = `<span class="stale-dot"></span>${state.staleLines.size} annotation${state.staleLines.size > 1 ? "s" : ""} may be outdated`; document.querySelector(".lab-header").appendChild(t); }
+  if (state.staleLines.size > 0) { const t = document.createElement("span"); t.className = "stale-warning"; t.innerHTML = `<span class="stale-dot"></span>${state.staleLines.size} annotation${state.staleLines.size > 1 ? "s" : ""} may be outdated`; document.querySelector(".unit-header").appendChild(t); }
   initEditMode(codeText, () => showOverview());
-  initTerminal(labId, state.serverMode, { getModifiedCode: getEditorCode });
+  initTerminal(unitId, state.serverMode, { getModifiedCode: getEditorCode });
   const expToggle = document.getElementById("explain-toggle");
   if (expToggle) expToggle.onclick = () => { document.getElementById("explain-panel").classList.toggle("mobile-hidden"); expToggle.classList.toggle("collapsed"); };
 })();

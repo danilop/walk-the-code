@@ -3,8 +3,8 @@
  * Used with @ts-check in .js files for editor type checking without a build step.
  */
 
-/** Lab metadata as returned by /api/labs or from labs.json */
-interface Lab {
+/** Unit metadata as returned by /api/units or from units.json */
+interface Unit {
   id: string;
   title: string;
   tagline?: string;
@@ -40,7 +40,7 @@ interface Explanation {
   highlight?: string[] | DiagramHighlight;
 }
 
-/** Knowledge check question for chapter quizzes */
+/** Knowledge check question for group quizzes */
 interface KnowledgeCheck {
   question: string;
   options: string[];
@@ -48,14 +48,14 @@ interface KnowledgeCheck {
   explanation: string;
 }
 
-/** Chapter definition from config */
-interface Chapter {
+/** Group definition from config */
+interface Group {
   id: string;
   title: string;
   description?: string;
   diagram?: string;
   comparison_diagram?: string;
-  labs?: string[];
+  units?: string[];
   knowledge_checks?: KnowledgeCheck[];
 }
 
@@ -76,15 +76,15 @@ interface SiteConfig {
   analytics_snippet?: string;
 }
 
-/** Static bundle from data/labs.json */
-interface LabsBundle {
+/** Static bundle from data/units.json */
+interface UnitsBundle {
   config?: SiteConfig;
-  labs: Lab[];
-  chapters?: Chapter[];
+  units: Unit[];
+  groups?: Group[];
   diagrams?: Record<string, string>;
 }
 
-/** Code response from /api/code/{labId} */
+/** Code response from /api/code/{unitId} */
 interface CodeResponse {
   code: string;
   filename: string;
@@ -116,7 +116,7 @@ interface WTCSiteModule {
   renderGitHubCorner(config: SiteConfig): void;
   setDocumentTitle(pageTitle: string, config: SiteConfig): void;
   siteTitle(config: SiteConfig): string;
-  addProgressBadges(labs: Lab[]): void;
+  addProgressBadges(units: Unit[]): void;
   escapeHtml(str: string): string;
   terminology(config: SiteConfig): ResolvedTerminology;
 }
@@ -131,7 +131,7 @@ declare const hljs: {
   highlight(code: string, options: { language: string; ignoreIllegals?: boolean }): { value: string };
 };
 
-/** Mermaid global (chapter.js uses it as a global, not ESM import) */
+/** Mermaid global (group.js uses it as a global, not ESM import) */
 declare const mermaid: {
   initialize(config: Record<string, unknown>): void;
   render(id: string, source: string): Promise<{ svg: string }>;

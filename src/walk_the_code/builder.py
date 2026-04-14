@@ -1,10 +1,10 @@
-"""Build command: bundle labs, diagrams, chapters into a single JSON file."""
+"""Build command: bundle units, diagrams, groups into a single JSON file."""
 
 import json
 import sys
 from pathlib import Path
 
-from .config import _line_hash, detect_language, lab_files, primary_file, load_config
+from .config import _line_hash, detect_language, unit_files, primary_file, load_config
 
 
 def build():
@@ -15,21 +15,21 @@ def build():
     code_dir = Path(config["_code_dir"])
     default_lang = config.get("language", "python")
 
-    labs = []
-    for lab in config.get("labs", []):
-        code_path = code_dir / lab["id"] / lab["file"]
-        stem = Path(lab["file"]).stem
-        exp_path = config_dir / "comments" / lab["id"] / f"{stem}.json"
+    units = []
+    for unit in config.get("units", []):
+        code_path = code_dir / unit["id"] / unit["file"]
+        stem = Path(unit["file"]).stem
+        exp_path = config_dir / "comments" / unit["id"] / f"{stem}.json"
         explanations = json.loads(exp_path.read_text()) if exp_path.exists() else {}
 
         # Build files array for multi-file support
-        lf = lab_files(lab, default_lang)
+        lf = unit_files(unit, default_lang)
         pf = next((f for f in lf if f["role"] == "primary"), lf[0])
         files_data = []
         for fe in lf:
-            fp = code_dir / lab["id"] / fe["path"]
+            fp = code_dir / unit["id"] / fe["path"]
             fstem = Path(fe["path"]).stem
-            fexp_path = config_dir / "comments" / lab["id"] / f"{fstem}.json"
+            fexp_path = config_dir / "comments" / unit["id"] / f"{fstem}.json"
             fexp = json.loads(fexp_path.read_text()) if fexp_path.exists() else {}
             files_data.append({
                 "path": fe["path"], "language": fe["language"], "role": fe["role"],
@@ -37,13 +37,13 @@ def build():
                 "explanations": fexp, "annotated_lines": len(fexp),
             })
 
-        labs.append({
-            "id": lab["id"], "title": lab["title"], "tagline": lab.get("tagline", ""),
-            "description": lab.get("description", ""),
-            "learning_objectives": lab.get("learning_objectives", []),
-            "exercises": lab.get("exercises", []),
-            "file": lab["file"],
-            "language": lab.get("language", detect_language(lab["file"], default_lang)),
+        units.append({
+            "id": unit["id"], "title": unit["title"], "tagline": unit.get("tagline", ""),
+            "description": unit.get("description", ""),
+            "learning_objectives": unit.get("learning_objectives", []),
+            "exercises": unit.get("exercises", []),
+            "file": unit["file"],
+            "language": unit.get("language", detect_language(unit["file"], default_lang)),
             "code": code_path.read_text() if code_path.exists() else "",
             "explanations": explanations,
             "annotated_lines": len(explanations),
@@ -56,17 +56,17 @@ def build():
         for mmd in diagrams_dir.glob("*.mmd"):
             diagrams[mmd.stem] = mmd.read_text()
 
-    chapters = config.get("chapters", [])
+    groups = config.get("groups", [])
 
     # --- Validation ---
     warnings = []
     errors = []
     referenced_diagrams = set()
 
-    for lab_entry in labs:
-        lid = lab_entry["id"]
+    for unit_entry in units:
+        lid = unit_entry["id"]
         # Validate all files (multi-file support)
-        for file_entry in lab_entry.get("files", []):
+        for file_entry in unit_entry.get("files", []):
             code_lines = file_entry["code"].split("\n") if file_entry["code"] else []
             total_lines = len(code_lines)
             explanations = file_entry.get("explanations", {})
@@ -91,39 +91,39 @@ def build():
                     if entry["hash"] != expected:
                         warnings.append(f"{lid}/{fpath}: line {line_num} hash mismatch (annotation may be outdated)")
 
-    # Chapter lab and diagram references (recursive)
-    all_lab_ids = {l["id"] for l in labs}
-    def _validate_chapters(chs):
+    # Group unit and diagram references (recursive)
+    all_unit_ids = {l["id"] for l in units}
+    def _validate_groups(chs):
         for ch in chs:
-            for lab_id in ch.get("labs", []):
-                if lab_id not in all_lab_ids:
-                    errors.append(f"Chapter '{ch['id']}': references lab '{lab_id}' which is not in the labs list")
+            for unit_id in ch.get("units", []):
+                if unit_id not in all_unit_ids:
+                    errors.append(f"Group '{ch['id']}': references unit '{unit_id}' which is not in the units list")
             comp_diag = ch.get("comparison_diagram")
             if comp_diag:
                 referenced_diagrams.add(comp_diag)
                 if comp_diag not in diagrams:
-                    errors.append(f"Chapter '{ch['id']}': comparison_diagram '{comp_diag}' not found in diagrams/")
-            _validate_chapters(ch.get("chapters", []))
-    _validate_chapters(chapters)
+                    errors.append(f"Group '{ch['id']}': comparison_diagram '{comp_diag}' not found in diagrams/")
+            _validate_groups(ch.get("groups", []))
+    _validate_groups(groups)
 
     # Orphaned diagram files
     orphaned = set(diagrams.keys()) - referenced_diagrams
-    # Exclude diagrams referenced in chapter inline definitions
+    # Exclude diagrams referenced in group inline definitions
     def _collect_inline_diagrams(chs):
         for ch in chs:
             ch_diag = ch.get("diagram", "")
             for d in orphaned.copy():
                 if d in ch_diag:
                     orphaned.discard(d)
-            _collect_inline_diagrams(ch.get("chapters", []))
-    _collect_inline_diagrams(chapters)
+            _collect_inline_diagrams(ch.get("groups", []))
+    _collect_inline_diagrams(groups)
     if orphaned:
         warnings.append(f"Orphaned diagram files not referenced by any annotation: {', '.join(sorted(orphaned))}")
 
     stale = [w for w in warnings if "hash mismatch" in w]
     other_warnings = [w for w in warnings if "hash mismatch" not in w]
     if stale:
-        print(f"\n  Stale annotations ({len(stale)}) — run add_hashes.py to fix:")
+        print(f"\n  Stale annotations ({len(stale)}) — run wtc-hash to fix:")
         for w in stale:
             print(f"    ~ {w}")
     if other_warnings:
@@ -145,7 +145,7 @@ def build():
             "terminology": config.get("terminology"),
             "show_credits": config.get("show_credits", True),
         },
-        "labs": labs, "diagrams": diagrams, "chapters": chapters,
+        "units": units, "diagrams": diagrams, "groups": groups,
     }
     # Inject analytics snippet if configured
     af = config.get("analytics_file")
@@ -153,9 +153,9 @@ def build():
         af_path = config_dir / af
         if af_path.exists():
             bundle["config"]["analytics_snippet"] = af_path.read_text()
-    output_path = output_dir / "labs.json"
+    output_path = output_dir / "units.json"
     output_path.write_text(json.dumps(bundle))
-    print(f"\nBuilt {output_path} ({len(labs)} labs, {len(chapters)} chapters, {len(diagrams)} diagrams, {output_path.stat().st_size / 1024:.0f} KB)")
+    print(f"\nBuilt {output_path} ({len(units)} units, {len(groups)} groups, {len(diagrams)} diagrams, {output_path.stat().st_size / 1024:.0f} KB)")
     if errors:
         print(f"\nBuild completed with {len(errors)} error(s). Fix them to ensure the tutorial works correctly.")
         sys.exit(1)

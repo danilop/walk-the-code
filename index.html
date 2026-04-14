@@ -19,56 +19,56 @@
 async function loadData() {
   try {
     const [labsRes, chaptersRes, config] = await Promise.all([
-      fetch("/api/labs"),
-      fetch("/api/chapters").catch(() => null),
+      fetch("/api/units"),
+      fetch("/api/groups").catch(() => null),
       window.WTCSite.loadConfig(),
     ]);
     if (labsRes.ok) {
-      const labs = await labsRes.json();
-      const chapters = chaptersRes && chaptersRes.ok ? await chaptersRes.json() : null;
-      return {labs, chapters, config};
+      const units = await labsRes.json();
+      const groups = chaptersRes && chaptersRes.ok ? await chaptersRes.json() : null;
+      return {units, groups, config};
     }
   } catch(e) {}
-  const r = await fetch("data/labs.json"), d = await r.json();
-  return {labs: d.labs||d, chapters: d.chapters||null, config: d.config};
+  const r = await fetch("data/units.json"), d = await r.json();
+  return {units: d.units||d, groups: d.groups||null, config: d.config};
 }
-loadData().then(({labs, chapters, config}) => {
+loadData().then(({units, groups, config}) => {
   window.WTCSite.renderGitHubCorner(config);
   document.getElementById("site-title").textContent = window.WTCSite.siteTitle(config);
   document.getElementById("site-tagline").textContent = config?.tagline || "";
   window.WTCSite.setDocumentTitle("", config);
   const el = document.getElementById("content");
-  const labMap = {}; labs.forEach((l,i) => labMap[l.id] = {...l, idx:i});
+  const unitMap = {}; units.forEach((l,i) => unitMap[l.id] = {...l, idx:i});
   const terms = window.WTCSite.terminology(config);
 
-  if (chapters && chapters.length) {
-    function renderChapters(chapters, parentEl, labMap, terms, depth, prefix) {
-      chapters.forEach((ch, ci) => {
+  if (groups && groups.length) {
+    function renderGroups(groups, parentEl, unitMap, terms, depth, prefix) {
+      groups.forEach((ch, ci) => {
         const num = prefix ? `${prefix}.${ci+1}` : `${ci+1}`;
-        const chLabs = (ch.labs||[]).map(id => labMap[id]).filter(Boolean);
+        const chUnits = (ch.units||[]).map(id => unitMap[id]).filter(Boolean);
         const countLabel = chLabs.length !== 1 ? terms.unitPlural.toLowerCase() : terms.unit.toLowerCase();
-        const div = document.createElement("div"); div.className = "chapter";
-        if (depth > 0) div.classList.add("chapter-nested");
+        const div = document.createElement("div"); div.className = "group";
+        if (depth > 0) div.classList.add("group-nested");
         if (depth > 0) div.style.marginLeft = (depth * 24) + "px";
         const isFirst = depth === 0 && ci === 0;
-        div.innerHTML = `<div class="chapter-header${isFirst?" open":""}"><span class="chapter-num">${WTCSite.escapeHtml(terms.group)} ${num}</span><span class="chapter-title">${WTCSite.escapeHtml(ch.title)}</span><a class="chapter-link" href="chapter.html?chapter=${ch.id}" onclick="event.stopPropagation()">About →</a><span class="chapter-count">${chLabs.length} ${WTCSite.escapeHtml(countLabel)}</span><span class="chapter-arrow">▶</span></div><ul class="chapter-labs${isFirst?" open":""}"></ul>`;
+        div.innerHTML = `<div class="group-header${isFirst?" open":""}"><span class="group-num">${WTCSite.escapeHtml(terms.group)} ${num}</span><span class="group-title">${WTCSite.escapeHtml(ch.title)}</span><a class="group-link" href="group.html?group=${ch.id}" onclick="event.stopPropagation()">About →</a><span class="group-count">${chLabs.length} ${WTCSite.escapeHtml(countLabel)}</span><span class="group-arrow">▶</span></div><ul class="group-units${isFirst?" open":""}"></ul>`;
         const ul = div.querySelector("ul");
-        chLabs.forEach(l => { ul.innerHTML += `<li class="lab-item"><a href="lab.html?lab=${l.id}"><span class="lab-num">${String(l.idx+1).padStart(2,"0")}</span><div><div class="lab-title-text">${WTCSite.escapeHtml(l.title)}</div><div class="lab-tagline">${WTCSite.escapeHtml(l.tagline||"")}</div></div></a></li>`; });
-        div.querySelector(".chapter-header").onclick = function() { this.classList.toggle("open"); ul.classList.toggle("open"); };
+        chLabs.forEach(l => { ul.innerHTML += `<li class="unit-item"><a href="unit.html?unit=${l.id}"><span class="unit-num">${String(l.idx+1).padStart(2,"0")}</span><div><div class="unit-title-text">${WTCSite.escapeHtml(l.title)}</div><div class="unit-tagline">${WTCSite.escapeHtml(l.tagline||"")}</div></div></a></li>`; });
+        div.querySelector(".group-header").onclick = function() { this.classList.toggle("open"); ul.classList.toggle("open"); };
         parentEl.appendChild(div);
-        if (ch.chapters && ch.chapters.length) {
-          renderChapters(ch.chapters, parentEl, labMap, terms, depth + 1, num);
+        if (ch.groups && ch.groups.length) {
+          renderGroups(ch.groups, parentEl, labMap, terms, depth + 1, num);
         }
       });
     }
-    renderChapters(chapters, el, labMap, terms, 0, "");
+    renderGroups(groups, el, unitMap, terms, 0, "");
   } else {
-    const ul = document.createElement("ul"); ul.className = "lab-list";
-    labs.forEach((l,i) => { ul.innerHTML += `<li class="lab-item"><a href="lab.html?lab=${l.id}"><span class="lab-num">${String(i+1).padStart(2,"0")}</span><div><div class="lab-title-text">${WTCSite.escapeHtml(l.title)}</div><div class="lab-tagline">${WTCSite.escapeHtml(l.tagline||"")}</div></div></a></li>`; });
+    const ul = document.createElement("ul"); ul.className = "unit-list";
+    units.forEach((l,i) => { ul.innerHTML += `<li class="unit-item"><a href="unit.html?unit=${l.id}"><span class="unit-num">${String(i+1).padStart(2,"0")}</span><div><div class="unit-title-text">${WTCSite.escapeHtml(l.title)}</div><div class="unit-tagline">${WTCSite.escapeHtml(l.tagline||"")}</div></div></a></li>`; });
     el.appendChild(ul);
   }
   document.getElementById("search-input").placeholder = `Filter ${terms.unitPlural.toLowerCase()}...`;
-  window.WTCSite.addProgressBadges(labs);
+  window.WTCSite.addProgressBadges(units);
   function stripHtml(s) { const d = document.createElement("div"); d.innerHTML = s; return d.textContent || ""; }
   function findContext(text, q) {
     const i = text.toLowerCase().indexOf(q);
@@ -78,37 +78,37 @@ loadData().then(({labs, chapters, config}) => {
     const re = new RegExp("(" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi");
     return snippet.replace(re, "<mark>$1</mark>");
   }
-  const labDataMap = {}; labs.forEach(l => {
+  const unitDataMap = {}; units.forEach(l => {
     const desc = stripHtml(l.description || "");
     const objectives = (l.learningObjectives || l.learning_objectives || []).join(" ");
-    labDataMap[l.id] = { desc, objectives };
+    unitDataMap[l.id] = { desc, objectives };
   });
   document.getElementById("search-input").addEventListener("input", e => {
     const q = e.target.value.toLowerCase().trim();
-    document.querySelectorAll(".lab-item").forEach(li => {
+    document.querySelectorAll(".unit-item").forEach(li => {
       const link = li.querySelector("a");
-      const labId = link ? new URLSearchParams(link.href.split("?")[1]).get("lab") : null;
+      const unitId = link ? new URLSearchParams(link.href.split("?")[1]).get("unit") : null;
       const titleTagline = li.textContent.toLowerCase();
-      let oldCtx = li.querySelector(".lab-match-context");
+      let oldCtx = li.querySelector(".unit-match-context");
       if (oldCtx) oldCtx.remove();
       if (!q || q.length < 3) { li.style.display = ""; return; }
       if (titleTagline.includes(q)) { li.style.display = ""; return; }
-      const data = labId && labDataMap[labId];
+      const data = unitId && unitDataMap[unitId];
       if (!data) { li.style.display = "none"; return; }
       const deepText = data.desc + " " + data.objectives;
       if (!deepText.toLowerCase().includes(q)) { li.style.display = "none"; return; }
       li.style.display = "";
       const ctx = findContext(data.desc, q) || findContext(data.objectives, q);
       if (ctx) {
-        const ctxEl = document.createElement("div"); ctxEl.className = "lab-match-context"; ctxEl.innerHTML = ctx;
+        const ctxEl = document.createElement("div"); ctxEl.className = "unit-match-context"; ctxEl.innerHTML = ctx;
         const wrapper = li.querySelector("a > div");
         if (wrapper) wrapper.appendChild(ctxEl);
       }
     });
-    document.querySelectorAll(".chapter").forEach(ch => {
-      const visible = ch.querySelectorAll(".lab-item:not([style*='display: none'])").length;
+    document.querySelectorAll(".group").forEach(ch => {
+      const visible = ch.querySelectorAll(".unit-item:not([style*='display: none'])").length;
       ch.style.display = !q || q.length < 3 || visible > 0 ? "" : "none";
-      if (q && q.length >= 3 && visible > 0) { ch.querySelector(".chapter-header").classList.add("open"); ch.querySelector(".chapter-labs").classList.add("open"); }
+      if (q && q.length >= 3 && visible > 0) { ch.querySelector(".group-header").classList.add("open"); ch.querySelector(".group-units").classList.add("open"); }
     });
   });
 });

@@ -1,10 +1,10 @@
 // @ts-check
 
 /**
- * DOM rendering and interaction for the lab viewer.
+ * DOM rendering and interaction for the unit viewer.
  */
 
-import { state, labId, COMMENT_RE } from './lab-state.js';
+import { state, unitId, COMMENT_RE } from './unit-state.js';
 
 const CODE_COACH_KEY = "wtc-code-coach-dismissed";
 
@@ -14,7 +14,7 @@ export function setTourStartCallback(fn) { _onTourStart = fn; }
 
 /** @param {string} line @returns {boolean} */
 export function isComment(line) {
-  return (COMMENT_RE[state.labLanguage] || COMMENT_RE.python).test(line);
+  return (COMMENT_RE[state.unitLanguage] || COMMENT_RE.python).test(line);
 }
 
 export function buildAnnotatedLines() {
@@ -38,12 +38,12 @@ export function clearCode() {
 
 /** @param {function(string):void} onSwitch */
 export function renderFileTabs(onSwitch) {
-  if (state.labFiles.length <= 1) return;
+  if (state.unitFiles.length <= 1) return;
   const existing = document.querySelector('.file-tabs');
   if (existing) existing.remove();
   const bar = document.createElement('div');
   bar.className = 'file-tabs';
-  state.labFiles.forEach(f => {
+  state.unitFiles.forEach(f => {
     const tab = document.createElement('button');
     tab.className = 'file-tab' + (f.path === state.currentFile ? ' active' : '');
     tab.textContent = f.path.split('/').pop();
@@ -58,7 +58,7 @@ export function renderFileTabs(onSwitch) {
 /** @param {string} code */
 export function renderCode(code) {
   clearCode();
-  const hl = hljs.highlight(code, { language: state.labLanguage, ignoreIllegals: true }).value;
+  const hl = hljs.highlight(code, { language: state.unitLanguage, ignoreIllegals: true }).value;
   const table = document.getElementById("code-table");
   hl.split("\n").forEach((html, i) => {
     const ln = i + 1, tr = document.createElement("tr");
@@ -276,7 +276,7 @@ export function selectLine(lineNum) {
   }
   if (state.annotatedLines.includes(lineNum)) {
     state.visitedLines.add(lineNum);
-    try { localStorage.setItem(`wtc-visited-${labId}`, JSON.stringify([...state.visitedLines])); } catch (e) { /* ignore */ }
+    try { localStorage.setItem(`wtc-visited-${unitId}`, JSON.stringify([...state.visitedLines])); } catch (e) { /* ignore */ }
     if (row) row.classList.add("visited");
   }
   dismissCodeCoach();
@@ -292,23 +292,23 @@ export function showOverview() {
   const ov = document.getElementById("explain-overview");
   ov.style.display = "block";
   let ovHtml = '';
-  if (state.labDescription) ovHtml += `<div class="lab-desc">${state.labDescription}</div>`;
-  if (state.labObjectives.length) ovHtml += `<div class="learning-objectives"><h3>Learning Objectives</h3><ul>${state.labObjectives.map(o => `<li>${window.WTCSite.escapeHtml(o)}</li>`).join("")}</ul></div>`;
-  if (state.labExercises.length) {
-    ovHtml += `<div class="exercises"><h3>Exercises</h3><div class="exercise-count">${state.completedExercises.size}/${state.labExercises.length} completed</div>${state.labExercises.map((ex, i) => `<div class="exercise"><label class="exercise-label"><input type="checkbox" class="exercise-check" data-idx="${i}" ${state.completedExercises.has(i) ? 'checked' : ''}><span class="exercise-prompt">${window.WTCSite.escapeHtml(ex.prompt)}</span></label>${ex.hint ? `<div class="exercise-hint" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">Show hint</div><div class="exercise-hint-text">${window.WTCSite.escapeHtml(ex.hint)}</div>` : ""}</div>`).join("")}</div>`;
+  if (state.unitDescription) ovHtml += `<div class="unit-desc">${state.unitDescription}</div>`;
+  if (state.unitObjectives.length) ovHtml += `<div class="learning-objectives"><h3>Learning Objectives</h3><ul>${state.unitObjectives.map(o => `<li>${window.WTCSite.escapeHtml(o)}</li>`).join("")}</ul></div>`;
+  if (state.unitExercises.length) {
+    ovHtml += `<div class="exercises"><h3>Exercises</h3><div class="exercise-count">${state.completedExercises.size}/${state.unitExercises.length} completed</div>${state.unitExercises.map((ex, i) => `<div class="exercise"><label class="exercise-label"><input type="checkbox" class="exercise-check" data-idx="${i}" ${state.completedExercises.has(i) ? 'checked' : ''}><span class="exercise-prompt">${window.WTCSite.escapeHtml(ex.prompt)}</span></label>${ex.hint ? `<div class="exercise-hint" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">Show hint</div><div class="exercise-hint-text">${window.WTCSite.escapeHtml(ex.hint)}</div>` : ""}</div>`).join("")}</div>`;
   }
   if (ovHtml) {
     // Add reset progress link
     ovHtml += `<button class="tour-start-btn" id="tour-start-btn">▶ Start Guided Tour</button>`;
-    ovHtml += `<div class="reset-progress"><button class="reset-progress-btn" id="reset-progress-btn">Reset progress for this lab</button><button class="reset-progress-btn" id="show-tips-btn">Show tips again</button></div>`;
+    ovHtml += `<div class="reset-progress"><button class="reset-progress-btn" id="reset-progress-btn">Reset progress for this unit</button><button class="reset-progress-btn" id="show-tips-btn">Show tips again</button></div>`;
     ov.innerHTML = ovHtml;
     ov.querySelectorAll('.exercise-check').forEach(cb => {
       cb.addEventListener('change', e => {
         const idx = parseInt(/** @type {HTMLInputElement} */(e.target).dataset.idx);
         if (/** @type {HTMLInputElement} */(e.target).checked) state.completedExercises.add(idx); else state.completedExercises.delete(idx);
-        try { localStorage.setItem(`wtc-exercises-${labId}`, JSON.stringify([...state.completedExercises])); } catch (ex) { /* ignore */ }
+        try { localStorage.setItem(`wtc-exercises-${unitId}`, JSON.stringify([...state.completedExercises])); } catch (ex) { /* ignore */ }
         const counter = ov.querySelector('.exercise-count');
-        if (counter) counter.textContent = `${state.completedExercises.size}/${state.labExercises.length} completed`;
+        if (counter) counter.textContent = `${state.completedExercises.size}/${state.unitExercises.length} completed`;
       });
     });
     const resetBtn = document.getElementById("reset-progress-btn");
@@ -316,8 +316,8 @@ export function showOverview() {
       resetBtn.addEventListener("click", () => {
         state.visitedLines = new Set();
         state.completedExercises = new Set();
-        try { localStorage.removeItem(`wtc-visited-${labId}`); } catch (e) { /* ignore */ }
-        try { localStorage.removeItem(`wtc-exercises-${labId}`); } catch (e) { /* ignore */ }
+        try { localStorage.removeItem(`wtc-visited-${unitId}`); } catch (e) { /* ignore */ }
+        try { localStorage.removeItem(`wtc-exercises-${unitId}`); } catch (e) { /* ignore */ }
         document.querySelectorAll(".code-line.visited").forEach(el => el.classList.remove("visited"));
         updateProgress();
         showOverview(); // Re-render to uncheck exercise boxes
@@ -335,17 +335,17 @@ export function showOverview() {
 }
 
 export function buildNav() {
-  const nav = document.getElementById("nav-footer"), idx = state.allLabs.findIndex(l => l.id === labId);
+  const nav = document.getElementById("nav-footer"), idx = state.allUnits.findIndex(l => l.id === unitId);
   if (idx < 0) return;
-  function findChapter(chapters) {
-    for (const c of chapters) {
-      if ((c.labs || []).includes(labId)) return c;
-      if (c.chapters) { const found = findChapter(c.chapters); if (found) return found; }
+  function findGroup(groups) {
+    for (const c of groups) {
+      if ((c.units || []).includes(unitId)) return c;
+      if (c.groups) { const found = findGroup(c.groups); if (found) return found; }
     }
     return null;
   }
-  const ch = findChapter(state.allChapters);
-  if (ch) nav.innerHTML += `<a class="nav-link chapter" href="chapter.html?chapter=${ch.id}">${window.WTCSite.escapeHtml(ch.title)}</a>`;
-  if (idx > 0) nav.innerHTML += `<a class="nav-link" href="lab.html?lab=${state.allLabs[idx - 1].id}">&larr; ${window.WTCSite.escapeHtml(state.allLabs[idx - 1].title)}</a>`;
-  if (idx < state.allLabs.length - 1) nav.innerHTML += `<a class="nav-link" href="lab.html?lab=${state.allLabs[idx + 1].id}">${window.WTCSite.escapeHtml(state.allLabs[idx + 1].title)} &rarr;</a>`;
+  const ch = findGroup(state.allGroups);
+  if (ch) nav.innerHTML += `<a class="nav-link group" href="group.html?group=${ch.id}">${window.WTCSite.escapeHtml(ch.title)}</a>`;
+  if (idx > 0) nav.innerHTML += `<a class="nav-link" href="unit.html?unit=${state.allUnits[idx - 1].id}">&larr; ${window.WTCSite.escapeHtml(state.allUnits[idx - 1].title)}</a>`;
+  if (idx < state.allUnits.length - 1) nav.innerHTML += `<a class="nav-link" href="unit.html?unit=${state.allUnits[idx + 1].id}">${window.WTCSite.escapeHtml(state.allUnits[idx + 1].title)} &rarr;</a>`;
 }

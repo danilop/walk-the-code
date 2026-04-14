@@ -14,7 +14,7 @@ metadata:
 
 # Walk the Code — Code Walkthrough Generation
 
-Create or update interactive code walkthroughs for any codebase using [walk-the-code](https://github.com/danilop/walk-the-code). The output is a web-based explanation where readers click code lines to see annotations, diagrams highlight relevant nodes as they navigate, and guided tours walk through key concepts. The hierarchy labels (chapters/labs) are customizable via the `terminology` field in config.json — for example "Modules/Lessons" or "Parts/Steps".
+Create or update interactive code walkthroughs for any codebase using [walk-the-code](https://github.com/danilop/walk-the-code). The output is a web-based explanation where readers click code lines to see annotations, diagrams highlight relevant nodes as they navigate, and guided tours walk through key concepts. The hierarchy labels (groups/units) are customizable via the `terminology` field in config.json — for example "Modules/Lessons" or "Parts/Steps".
 
 For exact config schema, comment format, diagram syntax, and CLI commands, read the walk-the-code README:
 https://github.com/danilop/walk-the-code/blob/main/README.md
@@ -44,8 +44,8 @@ Read the repository structure. Identify:
 - **Dependencies between files** — which files call/import which
 
 **For repository documentation, also map the repo topology:**
-- **Dependency graph** — trace imports and calls to understand which files depend on which. This reveals the natural clusters in the codebase and the right grouping for chapters.
-- **Layers and boundaries** — identify architectural layers (e.g., routes → controllers → services → data access) or module boundaries (e.g., independent packages in a monorepo). These become chapter boundaries.
+- **Dependency graph** — trace imports and calls to understand which files depend on which. This reveals the natural clusters in the codebase and the right grouping for groups.
+- **Layers and boundaries** — identify architectural layers (e.g., routes → controllers → services → data access) or module boundaries (e.g., independent packages in a monorepo). These become group boundaries.
 - **Noise filtering** — separate documentation-worthy code from infrastructure noise. Skip generated files, lockfiles, vendored dependencies, build output, and boilerplate that every project has (standard Dockerfiles, generic CI YAML). Focus on files where a new team member would ask "why is this done this way?"
 
 ### Step 2: Design the walkthrough structure
@@ -54,7 +54,7 @@ Before writing any annotations, plan the structure:
 
 1. **Decide what to explain.** Not every file needs annotation. Focus on files that teach something. A 50-file repo might have 8-15 files worth walking through.
 
-2. **Group files by functional cohesion, not directory structure.** Directories are a starting signal but not the answer. A `utils/` folder with 12 unrelated helpers shouldn't be one chapter, while `auth/middleware.py`, `auth/oauth.py`, and `auth/tokens.py` belong together even though they share a directory.
+2. **Group files by functional cohesion, not directory structure.** Directories are a starting signal but not the answer. A `utils/` folder with 12 unrelated helpers shouldn't be one group, while `auth/middleware.py`, `auth/oauth.py`, and `auth/tokens.py` belong together even though they share a directory.
 
    Start by reading the import/require/include statements at the top of each core file to build a dependency map. Which files import which? This reveals the natural clusters. Then apply these grouping heuristics, in priority order:
    - **Shared responsibility** — files that collaborate to implement one feature or capability (e.g., a request handler + its validation + its data access layer)
@@ -62,12 +62,12 @@ Before writing any annotations, plan the structure:
    - **Data flow stage** — files that handle the same stage of a pipeline (ingestion, transformation, output)
    - **Directory structure** — use as a tiebreaker when the above don't give a clear answer
 
-   For multi-file labs, designate the entry point or orchestrator as `role: "primary"` and supporting files as secondary. The primary file is what the reader sees first.
+   For multi-file units, designate the entry point or orchestrator as `role: "primary"` and supporting files as secondary. The primary file is what the reader sees first.
 
-3. **Size the chapters appropriately.** Use nested chapters for large codebases:
-   - Small repo (1-5 files): no chapters needed, just labs
-   - Medium repo (5-20 files): 2-5 chapters
-   - Large repo (20+ files): nested chapters (parts → chapters → labs)
+3. **Size the groups appropriately.** Use nested groups for large codebases:
+   - Small repo (1-5 files): no groups needed, just units
+   - Medium repo (5-20 files): 2-5 groups
+   - Large repo (20+ files): nested groups (parts → groups → units)
 
 4. **Order for learning, not for the file system.** Start with the entry point or the simplest concept, then build up. The reader should never encounter something that depends on a concept they haven't seen yet.
 
@@ -90,8 +90,17 @@ Check if `config.json` exists in the walk-the-code directory.
 **If creating from scratch:**
 1. Create the directory structure: `walk-the-code/config.json`, `walk-the-code/comments/`, `walk-the-code/diagrams/`
 2. Write `config.json` directly with the real project structure — do NOT use `wtc-init` (that creates a hello-world scaffold meant for manual authoring)
-3. For multi-file labs, use the `files` array; for single-file labs, use `file`
+3. For multi-file units, use the `files` array; for single-file units, use `file`
 4. Set `code_dir` to point at the source code relative to config.json
+
+**Path resolution:** The unit `id` is used as a subdirectory under `code_dir`. For a unit with `"id": "my_unit"` and `"file": "main.py"`, the code is expected at `code_dir/my_unit/main.py`. Comments go in `comments/my_unit/main.json` (filename without extension + `.json`). This applies to both single-file and multi-file units.
+
+**Flat packages:** If multiple units share the same source directory, create symlinks from each unit ID to that directory:
+```bash
+cd code_dir
+ln -s actual_package_dir unit_id_1
+ln -s actual_package_dir unit_id_2
+```
 5. Create `walk-the-code/start.sh` so the user can launch the walkthrough with `./walk-the-code/start.sh`:
    ```bash
    #!/usr/bin/env bash
@@ -126,7 +135,9 @@ This is where quality matters most. For each annotated line, write the comment J
 
 **Use `important: true` sparingly.** Mark only architectural boundaries, key design decisions, or "aha moment" lines — roughly 10-15% of annotated lines.
 
-**Annotate selectively.** Target 30-60% coverage. Skip imports, boilerplate, and obvious code.
+**Annotate selectively.** Target 30-60% coverage for educational walkthroughs, 15-40% for repository documentation. Skip imports, boilerplate, and obvious code.
+
+**Never annotate blank lines** — the validator warns about them. Before writing annotations, check line numbers against the actual file content to avoid targeting blank lines. If the logical point you want to explain falls on a blank line, annotate the first non-blank line after it instead.
 
 **Write for the audience.** Infer from the codebase:
 - Educational repo → explain from first principles
@@ -166,10 +177,10 @@ Then in annotations:
 }
 ```
 
-**Chapter diagrams for overview.** Each chapter should have an inline `diagram` field showing the high-level concept.
+**Group diagrams for overview.** Each group should have an inline `diagram` field showing the high-level concept.
 
 **For repository documentation, prioritize architecture maps.** The most valuable diagrams for a real codebase aren't algorithm-level data flows — they're the system-level maps that show how all the pieces connect:
-1. A **system architecture diagram** showing all major components and their relationships — reuse this across every lab with different highlights so the reader always sees "you are here" in the codebase
+1. A **system architecture diagram** showing all major components and their relationships — reuse this across every unit with different highlights so the reader always sees "you are here" in the codebase
 2. A **request/data flow diagram** showing the path through the system for the primary use case (e.g., an HTTP request from entry to response, or a data pipeline from ingestion to output)
 
 These two diagrams, highlighted differently per file, give the reader a persistent sense of where each file fits in the whole.
@@ -180,7 +191,7 @@ These two diagrams, highlighted differently per file, give the reader a persiste
 
 ### Step 6: Add learning objectives and exercises
 
-For each lab, add `learning_objectives` (2-4 concrete outcomes).
+For each unit, add `learning_objectives` (2-4 concrete outcomes).
 
 Exercises are optional. Include them when the reader can learn by modifying the code:
 - Educational repos — always
@@ -196,20 +207,21 @@ Good exercises change one thing and make the reader predict or observe the conse
 }
 ```
 
-For chapters, add `knowledge_checks` — multiple-choice questions that test conceptual understanding.
+For groups, add `knowledge_checks` — multiple-choice questions that test conceptual understanding.
 
 ### Step 7: Validate and hash
 
-1. Run `uv run python add_hashes.py path/to/config.json` to compute content hashes
-2. Run `wtc-validate path/to/config.json` to check for errors
+1. Run `wtc-hash path/to/config.json` to compute content hashes
+2. Run `wtc-validate path/to/config.json` to check for errors — this also reports annotation coverage and the `important` ratio per unit
 3. Fix any errors, review warnings
+4. Verify the `important` ratio is 10-15% of total annotations. If it's too high, demote lines that aren't true architectural boundaries.
 
 ### Step 8: Preview
 
 Tell the user to run `./walk-the-code/start.sh` — it starts the server and opens the browser automatically. Then verify:
 - Annotations appear on the correct lines
 - Diagrams render and highlights work
-- Navigation between labs and chapters is logical
+- Navigation between units and groups is logical
 - The guided tour (`?tour=true`) flows naturally
 
 ## Content quality checklist
@@ -217,12 +229,12 @@ Tell the user to run `./walk-the-code/start.sh` — it starts the server and ope
 - [ ] Every annotated line explains WHY, not WHAT
 - [ ] `important` lines mark architectural boundaries (10-15% of annotations)
 - [ ] At least 2 reusable diagrams with per-line highlighting
-- [ ] Chapters have descriptions and overview diagrams
-- [ ] Labs have learning objectives and exercises where appropriate
+- [ ] Groups have descriptions and overview diagrams
+- [ ] Units have learning objectives and exercises where appropriate
 - [ ] Files are grouped by functional cohesion, not just directory structure
 - [ ] The reading order builds concepts progressively (no forward references)
 - [ ] Generated files, boilerplate, and infrastructure noise are excluded
 - [ ] For repo documentation: tribal knowledge is captured (design decisions, invariants, gotchas)
-- [ ] For repo documentation: a system architecture diagram is reused across labs with per-file highlights
+- [ ] For repo documentation: a system architecture diagram is reused across units with per-file highlights
 - [ ] `wtc-validate` passes with zero errors
-- [ ] Annotation coverage is 30-60% (not too sparse, not noise)
+- [ ] Annotation coverage is 30-60% for educational walkthroughs, 15-40% for repo documentation

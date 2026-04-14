@@ -1,11 +1,11 @@
 // @ts-check
 
 /**
- * Search functionality for the lab viewer.
+ * Search functionality for the unit viewer.
  */
 
-import { state } from './lab-state.js';
-import { selectLine } from './lab-render.js';
+import { state } from './unit-state.js';
+import { selectLine } from './unit-render.js';
 
 export function initSearch() {
   const searchInput = /** @type {HTMLInputElement} */ (document.getElementById("explain-search"));

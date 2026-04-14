@@ -1,13 +1,13 @@
 // @ts-check
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-import { state, labId, params } from './lab-state.js';
-import { loadStaticData, switchFile } from './lab-data.js';
+import { state, unitId, params } from './unit-state.js';
+import { loadStaticData, switchFile } from './unit-data.js';
 import {
   renderCode, buildAnnotatedLines, selectLine, showOverview,
   updateProgress, setMermaidRef, selectAdjacentAnnotatedLine, renderFileTabs,
   setTourStartCallback,
-} from './lab-render.js';
-import { startTour, stopTour, advanceTour } from './lab-tour.js';
+} from './unit-render.js';
+import { startTour, stopTour, advanceTour } from './unit-tour.js';
 
 mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables: {
   primaryColor:'#1f3c5e',primaryBorderColor:'#58a6ff',primaryTextColor:'#e6edf3',
@@ -41,7 +41,7 @@ document.addEventListener("keydown", e => {
 
 // Resize handle
 (function () {
-  const h = document.getElementById("h-resize"), ep = document.getElementById("explain-panel"), main = document.querySelector(".lab-main");
+  const h = document.getElementById("h-resize"), ep = document.getElementById("explain-panel"), main = document.querySelector(".unit-main");
   let startX, startW;
   h.addEventListener("mousedown", e => { e.preventDefault(); startX = e.clientX; startW = ep.offsetWidth; h.classList.add("dragging"); document.addEventListener("mousemove", drag); document.addEventListener("mouseup", up); });
   function drag(e) { ep.style.width = Math.max(200, Math.min(main.offsetWidth * 0.7, startW - (e.clientX - startX))) + "px"; }
@@ -67,7 +67,7 @@ const handleFileSwitch = async (filename) => {
 // Notify parent on line selection (override selectLine behavior via MutationObserver on explain-ref)
 new MutationObserver(() => {
   if (state.selectedLine !== null && window.parent !== window) {
-    window.parent.postMessage({ type: 'wtc:lineSelected', line: state.selectedLine, lab: labId }, '*');
+    window.parent.postMessage({ type: 'wtc:lineSelected', line: state.selectedLine, unit: unitId }, '*');
   }
 }).observe(document.getElementById("explain-ref"), { childList: true, characterData: true, subtree: true });
 
@@ -76,7 +76,7 @@ new MutationObserver(() => {
   let data;
   try { data = await loadStaticData(); } catch (e) { /* ignore */ }
   if (!data) {
-    document.body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)">Lab not found.</div>';
+    document.body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)">Unit not found.</div>';
     return;
   }
   const { codeText } = data;

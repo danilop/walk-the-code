@@ -6,10 +6,10 @@ from pathlib import Path
 
 from .config import _line_hash
 
-_VALID_TEMPLATES = ("basic", "multilang", "chapter")
+_VALID_TEMPLATES = ("basic", "multilang", "group")
 
 # ---------------------------------------------------------------------------
-# Example lab content — basic (Python hello)
+# Example unit content — basic (Python hello)
 # ---------------------------------------------------------------------------
 
 _EXAMPLE_CODE = """\
@@ -46,15 +46,15 @@ _EXAMPLE_LAB = {
     "file": "hello.py",
     "title": "Hello World",
     "tagline": "A simple greeting generator to get you started.",
-    "description": "<p>This example lab shows how walk-the-code works. Click any line to see its explanation.</p>",
+    "description": "<p>This example unit shows how walk-the-code works. Click any line to see its explanation.</p>",
     "learning_objectives": [
         "Navigate the walk-the-code interface",
         "Understand how line-by-line annotations work",
-        "Run a lab from the browser",
+        "Run a unit from the browser",
     ],
     "exercises": [
         {
-            "prompt": "Add a new greeting word to the GREETINGS list and run the lab.",
+            "prompt": "Add a new greeting word to the GREETINGS list and run the unit.",
             "hint": "Edit line 4 and add another string to the list.",
         },
         {
@@ -66,7 +66,7 @@ _EXAMPLE_LAB = {
 }
 
 # ---------------------------------------------------------------------------
-# Example lab content — Java hello (used by multilang & chapter templates)
+# Example unit content — Java hello (used by multilang & group templates)
 # ---------------------------------------------------------------------------
 
 _JAVA_CODE = """\
@@ -109,7 +109,7 @@ _JAVA_LAB = {
     "file": "Hello.java",
     "title": "Hello World (Java)",
     "tagline": "The same greeting generator, written in Java.",
-    "description": "<p>A Java version of the hello lab, demonstrating multi-language support.</p>",
+    "description": "<p>A Java version of the hello unit, demonstrating multi-language support.</p>",
     "learning_objectives": [
         "Compare Python and Java implementations side by side",
         "See how walk-the-code handles different languages",
@@ -122,15 +122,15 @@ _PYTHON_MULTILANG_LAB = {
     "file": "hello.py",
     "title": "Hello World (Python)",
     "tagline": "A simple greeting generator in Python.",
-    "description": "<p>This example lab shows how walk-the-code works. Click any line to see its explanation.</p>",
+    "description": "<p>This example unit shows how walk-the-code works. Click any line to see its explanation.</p>",
     "learning_objectives": [
         "Navigate the walk-the-code interface",
         "Understand how line-by-line annotations work",
-        "Run a lab from the browser",
+        "Run a unit from the browser",
     ],
     "exercises": [
         {
-            "prompt": "Add a new greeting word to the GREETINGS list and run the lab.",
+            "prompt": "Add a new greeting word to the GREETINGS list and run the unit.",
             "hint": "Edit line 4 and add another string to the list.",
         },
     ],
@@ -178,16 +178,16 @@ def init(template="basic"):
         _scaffold_basic(cwd, config_path, title, tagline, repo_url, dirs)
     elif template == "multilang":
         _scaffold_multilang(cwd, config_path, title, tagline, repo_url, dirs)
-    elif template == "chapter":
-        _scaffold_chapter(cwd, config_path, title, tagline, repo_url, dirs)
+    elif template == "group":
+        _scaffold_group(cwd, config_path, title, tagline, repo_url, dirs)
 
     print("\nRun `wtc-serve` to preview it in your browser.\n")
     print("Next steps:")
-    print("  1. Explore the example lab(s) to understand the project structure")
-    print("  2. Add your own source files under samples/<lab_id>/")
-    print("  3. Add annotations under comments/<lab_id>/<filename>.json")
+    print("  1. Explore the example unit(s) to understand the project structure")
+    print("  2. Add your own source files under samples/<unit_id>/")
+    print("  3. Add annotations under comments/<unit_id>/<filename>.json")
     print("  4. Add Mermaid diagrams under diagrams/<name>.mmd")
-    print('  5. Register new labs in config.json under "labs"')
+    print('  5. Register new units in config.json under "units"')
     print("  6. Run `wtc-serve` to preview or `wtc-build` to bundle")
 
 
@@ -196,8 +196,8 @@ def init(template="basic"):
 # ---------------------------------------------------------------------------
 
 def _scaffold_basic(cwd, config_path, title, tagline, repo_url, dirs):
-    """Create the basic (default) template — a single Python hello lab."""
-    _create_lab(cwd, "hello", "hello.py", _EXAMPLE_CODE, _EXAMPLE_COMMENTS)
+    """Create the basic (default) template — a single Python hello unit."""
+    _create_unit(cwd, "hello", "hello.py", _EXAMPLE_CODE, _EXAMPLE_COMMENTS)
 
     config = {
         "$schema": "config.schema.json",
@@ -211,8 +211,8 @@ def _scaffold_basic(cwd, config_path, title, tagline, repo_url, dirs):
             "unit": "Unit",
             "unit_plural": "Units",
         },
-        "chapters": [],
-        "labs": [_EXAMPLE_LAB],
+        "groups": [],
+        "units": [_EXAMPLE_LAB],
     }
     config_path.write_text(json.dumps(config, indent=2) + "\n")
 
@@ -222,13 +222,13 @@ def _scaffold_basic(cwd, config_path, title, tagline, repo_url, dirs):
         print(f"  {d}/")
     print("  samples/hello/hello.py")
     print("  comments/hello/hello.json")
-    print("\nAn example lab (hello) has been included to help you get started.")
+    print("\nAn example unit (hello) has been included to help you get started.")
 
 
 def _scaffold_multilang(cwd, config_path, title, tagline, repo_url, dirs):
-    """Create the multilang template — Python + Java labs."""
-    _create_lab(cwd, "hello_python", "hello.py", _EXAMPLE_CODE, _EXAMPLE_COMMENTS)
-    _create_lab(cwd, "hello_java", "Hello.java", _JAVA_CODE, _JAVA_COMMENTS)
+    """Create the multilang template — Python + Java units."""
+    _create_unit(cwd, "hello_python", "hello.py", _EXAMPLE_CODE, _EXAMPLE_COMMENTS)
+    _create_unit(cwd, "hello_java", "Hello.java", _JAVA_CODE, _JAVA_COMMENTS)
 
     config = {
         "$schema": "config.schema.json",
@@ -242,8 +242,8 @@ def _scaffold_multilang(cwd, config_path, title, tagline, repo_url, dirs):
             "unit": "Unit",
             "unit_plural": "Units",
         },
-        "chapters": [],
-        "labs": [_PYTHON_MULTILANG_LAB, _JAVA_LAB],
+        "groups": [],
+        "units": [_PYTHON_MULTILANG_LAB, _JAVA_LAB],
     }
     config_path.write_text(json.dumps(config, indent=2) + "\n")
 
@@ -255,19 +255,19 @@ def _scaffold_multilang(cwd, config_path, title, tagline, repo_url, dirs):
     print("  comments/hello_python/hello.json")
     print("  samples/hello_java/Hello.java")
     print("  comments/hello_java/Hello.json")
-    print("\nTwo example labs (Python and Java) demonstrate multi-language support.")
+    print("\nTwo example units (Python and Java) demonstrate multi-language support.")
 
 
-def _scaffold_chapter(cwd, config_path, title, tagline, repo_url, dirs):
-    """Create the chapter template — a single lab wrapped in a chapter with a Mermaid diagram."""
-    _create_lab(cwd, "hello", "hello.py", _EXAMPLE_CODE, _EXAMPLE_COMMENTS)
+def _scaffold_group(cwd, config_path, title, tagline, repo_url, dirs):
+    """Create the group template — a single unit wrapped in a group with a Mermaid diagram."""
+    _create_unit(cwd, "hello", "hello.py", _EXAMPLE_CODE, _EXAMPLE_COMMENTS)
 
-    chapter = {
+    group_def = {
         "id": "getting-started",
         "title": "Getting Started",
-        "description": "<p>Your first chapter, containing a single introductory lab.</p>",
+        "description": "<p>Your first group, containing a single introductory unit.</p>",
         "diagram": "graph LR\n  A[Read code] --> B[Click a line]\n  B --> C[Read explanation]",
-        "labs": ["hello"],
+        "units": ["hello"],
     }
 
     config = {
@@ -277,13 +277,13 @@ def _scaffold_chapter(cwd, config_path, title, tagline, repo_url, dirs):
         "repo_url": repo_url,
         "code_dir": "samples",
         "terminology": {
-            "group": "Chapter",
-            "group_plural": "Chapters",
-            "unit": "Lab",
-            "unit_plural": "Labs",
+            "group": "Group",
+            "group_plural": "Groups",
+            "unit": "Unit",
+            "unit_plural": "Units",
         },
-        "chapters": [chapter],
-        "labs": [_EXAMPLE_LAB],
+        "groups": [group_def],
+        "units": [_EXAMPLE_LAB],
     }
     config_path.write_text(json.dumps(config, indent=2) + "\n")
 
@@ -293,17 +293,17 @@ def _scaffold_chapter(cwd, config_path, title, tagline, repo_url, dirs):
         print(f"  {d}/")
     print("  samples/hello/hello.py")
     print("  comments/hello/hello.json")
-    print("\nAn example chapter with an inline Mermaid diagram wraps the hello lab.")
+    print("\nAn example group with an inline Mermaid diagram wraps the hello unit.")
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _create_lab(cwd, lab_id, filename, code, comments_map):
-    """Write sample code and comment annotations for a single lab."""
+def _create_unit(cwd, unit_id, filename, code, comments_map):
+    """Write sample code and comment annotations for a single unit."""
     # Write sample code
-    sample_dir = cwd / "samples" / lab_id
+    sample_dir = cwd / "samples" / unit_id
     sample_dir.mkdir(parents=True, exist_ok=True)
     (sample_dir / filename).write_text(code)
 
@@ -318,7 +318,7 @@ def _create_lab(cwd, lab_id, filename, code, comments_map):
             comments[line_num] = {"text": entry, "hash": _line_hash(line_content)}
 
     # Write comment file
-    comment_dir = cwd / "comments" / lab_id
+    comment_dir = cwd / "comments" / unit_id
     comment_dir.mkdir(parents=True, exist_ok=True)
     comment_filename = Path(filename).stem + ".json"
     (comment_dir / comment_filename).write_text(json.dumps(comments, indent=2) + "\n")

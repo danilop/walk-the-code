@@ -3,7 +3,7 @@
   "title": "Monte Carlo Pi",
   "tagline": "Estimate Pi by throwing random darts — in Python and Java.",
   "code_dir": "samples",
-  "labs": [
+  "units": [
     {
       "id": "monte_carlo_python",
       "file": "pi.py",

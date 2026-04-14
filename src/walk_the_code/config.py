@@ -44,21 +44,21 @@ def load_config(config_path):
     return config
 
 
-def lab_files(lab, default_lang):
-    """Return list of {path, language, role} dicts for a lab."""
-    if lab.get("files"):
+def unit_files(unit, default_lang):
+    """Return list of {path, language, role} dicts for a unit."""
+    if unit.get("files"):
         return [
             {"path": f["path"], "language": detect_language(f["path"], default_lang),
              "role": f.get("role", "supporting")}
-            for f in lab["files"]
+            for f in unit["files"]
         ]
-    f = lab.get("file")
+    f = unit.get("file")
     if not f:
         return []
     return [{"path": f, "language": detect_language(f, default_lang), "role": "primary"}]
 
 
-def primary_file(lab, default_lang):
-    """Return the primary file entry for a lab."""
-    files = lab_files(lab, default_lang)
+def primary_file(unit, default_lang):
+    """Return the primary file entry for a unit."""
+    files = unit_files(unit, default_lang)
     return next((f for f in files if f["role"] == "primary"), files[0])

@@ -1,6 +1,6 @@
 // @ts-check
-import { state } from './lab-state.js';
-import { selectLine, showOverview, updateProgress } from './lab-render.js';
+import { state } from './unit-state.js';
+import { selectLine, showOverview, updateProgress } from './unit-render.js';
 
 export function startTour() {
   state.tourActive = true;

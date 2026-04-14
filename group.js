@@ -5,22 +5,22 @@ mermaid.initialize({ startOnLoad:false, theme:'base', themeVariables:{
   edgeLabelBackground:'#161b22',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',fontSize:'14px'
 }});
 
-const chapterId = new URLSearchParams(location.search).get("chapter");
+const groupId = new URLSearchParams(location.search).get("group");
 
 (async () => {
-  let chapters, labs, config, diagrams={}, serverMode=false;
+  let groups, units, config, diagrams={}, serverMode=false;
   try {
-    const r = await fetch("/api/chapters");
+    const r = await fetch("/api/groups");
     if (r.ok) {
-      chapters = await r.json();
-      labs = await (await fetch("/api/labs")).json();
+      groups = await r.json();
+      units = await (await fetch("/api/units")).json();
       config = await window.WTCSite.loadConfig();
       serverMode = true;
     }
   } catch(e) {}
-  if (!chapters) {
-    const d = await (await fetch("data/labs.json")).json();
-    chapters = d.chapters||[]; labs = d.labs||d;
+  if (!groups) {
+    const d = await (await fetch("data/units.json")).json();
+    groups = d.groups||[]; units = d.units||d;
     config = d.config || {};
     diagrams = d.diagrams || {};
     document.getElementById("back-link").href = "index.html";
@@ -28,21 +28,21 @@ const chapterId = new URLSearchParams(location.search).get("chapter");
 
   window.WTCSite.renderGitHubCorner(config);
 
-  const labMap = {}; labs.forEach((l,i) => labMap[l.id] = {...l, idx:i});
-  function flattenChapters(chapters, depth, prefix) {
+  const unitMap = {}; units.forEach((l,i) => unitMap[l.id] = {...l, idx:i});
+  function flattenGroups(groups, depth, prefix) {
     let result = [];
-    (chapters||[]).forEach((c, i) => {
+    (groups||[]).forEach((c, i) => {
       const num = prefix ? `${prefix}.${i+1}` : `${i+1}`;
       result.push({...c, _depth: depth, _num: num});
-      if (c.chapters) result = result.concat(flattenChapters(c.chapters, depth+1, num));
+      if (c.groups) result = result.concat(flattenGroups(c.groups, depth+1, num));
     });
     return result;
   }
-  const allFlat = flattenChapters(chapters, 0, "");
-  const flatEntry = allFlat.find(c => c.id === chapterId);
+  const allFlat = flattenGroups(groups, 0, "");
+  const flatEntry = allFlat.find(c => c.id === groupId);
   const ci = allFlat.indexOf(flatEntry);
   const ch = flatEntry;
-  if (!ch) { document.body.textContent = "Chapter not found"; return; }
+  if (!ch) { document.body.textContent = "Group not found"; return; }
 
   const terms = window.WTCSite.terminology(config);
   document.getElementById("back-link").textContent = `\u2190 All ${terms.unitPlural}`;
@@ -65,36 +65,36 @@ const chapterId = new URLSearchParams(location.search).get("chapter");
     }
     if (src) {
       const wrap = document.createElement("div");
-      wrap.innerHTML = `<h2 style="font-size:1.1rem;font-weight:600;margin-bottom:10px;color:var(--text-muted)">How the labs compare</h2><div class="diagram-box" id="compare-box"></div>`;
+      wrap.innerHTML = `<h2 style="font-size:1.1rem;font-weight:600;margin-bottom:10px;color:var(--text-muted)">How the units compare</h2><div class="diagram-box" id="compare-box"></div>`;
       document.getElementById("diagram-box").after(wrap);
       try { const {svg} = await mermaid.render("ch-comp", src); wrap.querySelector("#compare-box").innerHTML = svg; }
       catch(e) { wrap.querySelector("#compare-box").innerHTML = '<span style="color:var(--text-muted)">Diagram error</span>'; }
     }
   }
 
-  const ul = document.getElementById("labs");
-  (ch.labs||[]).forEach(id => {
-    const l = labMap[id]; if (!l) return;
-    ul.innerHTML += `<li class="lab-item"><a href="lab.html?lab=${l.id}"><span class="lab-num">${String(l.idx+1).padStart(2,"0")}</span><div><div class="lab-title-text">${WTCSite.escapeHtml(l.title)}</div><div class="lab-tagline">${WTCSite.escapeHtml(l.tagline||"")}</div></div></a></li>`;
+  const ul = document.getElementById("units");
+  (ch.units||[]).forEach(id => {
+    const l = unitMap[id]; if (!l) return;
+    ul.innerHTML += `<li class="unit-item"><a href="unit.html?unit=${l.id}"><span class="unit-num">${String(l.idx+1).padStart(2,"0")}</span><div><div class="unit-title-text">${WTCSite.escapeHtml(l.title)}</div><div class="unit-tagline">${WTCSite.escapeHtml(l.tagline||"")}</div></div></a></li>`;
   });
 
-  window.WTCSite.addProgressBadges(labs);
+  window.WTCSite.addProgressBadges(units);
 
-  // --- Sub-chapters ---
-  if (ch.chapters && ch.chapters.length) {
+  // --- Sub-groups ---
+  if (ch.groups && ch.groups.length) {
     const subSection = document.createElement("div");
     subSection.innerHTML = `<h2 style="font-size:1.1rem;font-weight:600;margin:24px 0 12px;color:var(--text-muted)">Sub-${terms.groupPlural.toLowerCase()}</h2>`;
-    const subUl = document.createElement("ul"); subUl.className = "lab-list";
-    ch.chapters.forEach((sub, si) => {
-      subUl.innerHTML += `<li class="lab-item"><a href="chapter.html?chapter=${sub.id}"><span class="lab-num">${flatEntry._num}.${si+1}</span><div><div class="lab-title-text">${WTCSite.escapeHtml(sub.title)}</div></div></a></li>`;
+    const subUl = document.createElement("ul"); subUl.className = "unit-list";
+    ch.groups.forEach((sub, si) => {
+      subUl.innerHTML += `<li class="unit-item"><a href="group.html?group=${sub.id}"><span class="unit-num">${flatEntry._num}.${si+1}</span><div><div class="unit-title-text">${WTCSite.escapeHtml(sub.title)}</div></div></a></li>`;
     });
     subSection.appendChild(subUl);
-    document.getElementById("labs").after(subSection);
+    document.getElementById("units").after(subSection);
   }
 
   // --- Knowledge Checks ---
   if (ch.knowledge_checks && ch.knowledge_checks.length > 0) {
-    const storageKey = `wtc-quiz-${chapterId}`;
+    const storageKey = `wtc-quiz-${groupId}`;
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch(e) {}
 
@@ -185,6 +185,6 @@ const chapterId = new URLSearchParams(location.search).get("chapter");
   }
 
   const nav = document.getElementById("nav-row");
-  if (ci > 0) nav.innerHTML += `<a class="nav-btn" href="chapter.html?chapter=${allFlat[ci-1].id}">&larr; ${WTCSite.escapeHtml(allFlat[ci-1].title)}</a>`;
-  if (ci < allFlat.length-1) nav.innerHTML += `<a class="nav-btn" href="chapter.html?chapter=${allFlat[ci+1].id}">${WTCSite.escapeHtml(allFlat[ci+1].title)} &rarr;</a>`;
+  if (ci > 0) nav.innerHTML += `<a class="nav-btn" href="group.html?group=${allFlat[ci-1].id}">&larr; ${WTCSite.escapeHtml(allFlat[ci-1].title)}</a>`;
+  if (ci < allFlat.length-1) nav.innerHTML += `<a class="nav-btn" href="group.html?group=${allFlat[ci+1].id}">${WTCSite.escapeHtml(allFlat[ci+1].title)} &rarr;</a>`;
 })();

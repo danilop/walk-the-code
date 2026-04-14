@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/danilop/walk-the-code/config.schema.json",
   "title": "Walk the Code Configuration",
-  "description": "Schema for walk-the-code config.json — defines project metadata, chapter structure, lab definitions, and optional run commands for an interactive line-by-line code tutorial.",
+  "description": "Schema for walk-the-code config.json — defines project metadata, group structure, unit definitions, and optional run commands for an interactive line-by-line code tutorial.",
   "type": "object",
   "properties": {
     "title": {
@@ -31,7 +31,7 @@
         "go",
         "java"
       ],
-      "description": "Default programming language for all labs. Auto-detected from file extension if omitted."
+      "description": "Default programming language for all units. Auto-detected from file extension if omitted."
     },
     "code_dir": {
       "type": "string",
@@ -40,28 +40,28 @@
     },
     "terminology": {
       "type": "object",
-      "description": "Custom display names for the hierarchy levels. JSON keys (chapters, labs) stay the same; only UI labels change.",
+      "description": "Custom display names for the hierarchy levels. The JSON keys (groups, units) never change — only the UI labels do.",
       "properties": {
-        "group": { "type": "string", "default": "Group", "description": "Singular name for a chapter-level grouping (e.g. Chapter, Module, Part)." },
+        "group": { "type": "string", "default": "Group", "description": "Singular name for a group-level grouping (e.g. Chapter, Module, Part)." },
         "group_plural": { "type": "string", "description": "Plural form of group. Auto-derived by appending 's' to group if omitted." },
-        "unit": { "type": "string", "default": "Unit", "description": "Singular name for a lab-level item (e.g. Lab, Lesson, Component)." },
+        "unit": { "type": "string", "default": "Unit", "description": "Singular name for a unit-level item (e.g. Lab, Lesson, Component)." },
         "unit_plural": { "type": "string", "description": "Plural form of unit. Auto-derived by appending 's' to unit if omitted." }
       },
       "additionalProperties": false
     },
-    "chapters": {
+    "groups": {
       "type": "array",
-      "description": "Array of chapter objects that group labs into themed sections, each with its own page, description, and optional diagram.",
+      "description": "Array of group objects that organize units into themed sections, each with its own page, description, and optional diagram.",
       "items": {
-        "$ref": "#/$defs/chapter"
+        "$ref": "#/$defs/group"
       }
     },
-    "labs": {
+    "units": {
       "type": "array",
-      "description": "Array of lab objects defining individual code tutorials.",
+      "description": "Array of unit objects defining individual code tutorials.",
       "minItems": 1,
       "items": {
-        "$ref": "#/$defs/lab"
+        "$ref": "#/$defs/unit"
       }
     },
     "analytics_file": {
@@ -74,36 +74,36 @@
       "description": "Show a 'Generated with walk-the-code' footer on all pages. Defaults to true. Set to false to hide the visible footer (the <meta name=\"generator\"> tag is always present)."
     }
   },
-  "required": ["labs"],
+  "required": ["units"],
   "additionalProperties": false,
   "$defs": {
-    "chapter": {
+    "group": {
       "type": "object",
-      "description": "A chapter groups labs into a themed section with its own page, description, and optional diagram.",
+      "description": "A group organizes units into a themed section with its own page, description, and optional diagram.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique chapter identifier."
+          "description": "Unique group identifier."
         },
         "title": {
           "type": "string",
-          "description": "Chapter title displayed on the chapter page and in navigation."
+          "description": "Group title displayed on the group page and in navigation."
         },
         "description": {
           "type": "string",
-          "description": "HTML description shown on the chapter page."
+          "description": "HTML description shown on the group page."
         },
         "diagram": {
           "type": "string",
-          "description": "Inline Mermaid source rendered on the chapter page (raw Mermaid markup, not a file reference)."
+          "description": "Inline Mermaid source rendered on the group page (raw Mermaid markup, not a file reference)."
         },
         "comparison_diagram": {
           "type": "string",
-          "description": "References a .mmd file in the diagrams/ directory, shown as a comparison diagram on the chapter page."
+          "description": "References a .mmd file in the diagrams/ directory, shown as a comparison diagram on the group page."
         },
-        "labs": {
+        "units": {
           "type": "array",
-          "description": "Ordered list of lab IDs belonging to this chapter.",
+          "description": "Ordered list of unit IDs belonging to this group.",
           "minItems": 1,
           "items": {
             "type": "string"
@@ -111,30 +111,30 @@
         },
         "knowledge_checks": {
           "type": "array",
-          "description": "Multiple-choice questions shown on the chapter page for self-assessment.",
+          "description": "Multiple-choice questions shown on the group page for self-assessment.",
           "items": {
             "$ref": "#/$defs/knowledge_check"
           }
         },
-        "chapters": {
+        "groups": {
           "type": "array",
-          "description": "Nested sub-chapters. A chapter can have labs, sub-chapters, or both.",
+          "description": "Nested sub-groups. A group can have units, sub-groups, or both.",
           "items": {
-            "$ref": "#/$defs/chapter"
+            "$ref": "#/$defs/group"
           }
         }
       },
       "required": ["id", "title"],
       "additionalProperties": false
     },
-    "lab": {
+    "unit": {
       "type": "object",
-      "description": "A lab defines a single code file tutorial with metadata, optional run command, learning objectives, and exercises.",
+      "description": "A unit defines a single code file tutorial with metadata, optional run command, learning objectives, and exercises.",
       "properties": {
         "id": {
           "type": "string",
           "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$",
-          "description": "Unique lab identifier. Must be a valid identifier (letters, digits, underscores, and hyphens; must start with a letter or underscore). Matches a subdirectory in code_dir."
+          "description": "Unique unit identifier. Must be a valid identifier (letters, digits, underscores, and hyphens; must start with a letter or underscore). Matches a subdirectory in code_dir."
         },
         "file": {
           "type": "string",
@@ -142,11 +142,11 @@
         },
         "title": {
           "type": "string",
-          "description": "Lab title displayed in navigation and on the lab page."
+          "description": "Unit title displayed in navigation and on the unit page."
         },
         "tagline": {
           "type": "string",
-          "description": "One-line summary shown on index and chapter pages."
+          "description": "One-line summary shown on index and group pages."
         },
         "description": {
           "type": "string",
@@ -164,11 +164,11 @@
             "go",
             "java"
           ],
-          "description": "Override the default language for this lab. Auto-detected from file extension if omitted."
+          "description": "Override the default language for this unit. Auto-detected from file extension if omitted."
         },
         "run_command": {
           "type": "array",
-          "description": "Command to execute the lab, specified as an array of strings. Enables the Run button in local server mode. Use [\"sh\", \"-c\", \"...\"] for compile-then-run languages.",
+          "description": "Command to execute the unit, specified as an array of strings. Enables the Run button in local server mode. Use [\"sh\", \"-c\", \"...\"] for compile-then-run languages.",
           "minItems": 1,
           "items": {
             "type": "string"
@@ -176,33 +176,33 @@
         },
         "learning_objectives": {
           "type": "array",
-          "description": "Array of strings describing what the learner will be able to do after completing this lab.",
+          "description": "Array of strings describing what the learner will be able to do after completing this unit.",
           "items": {
             "type": "string"
           }
         },
         "exercises": {
           "type": "array",
-          "description": "Array of exercise objects displayed in the lab overview panel with completion checkboxes (persisted per-browser in localStorage).",
+          "description": "Array of exercise objects displayed in the unit overview panel with completion checkboxes (persisted per-browser in localStorage).",
           "items": {
             "$ref": "#/$defs/exercise"
           }
         },
         "files": {
           "type": "array",
-          "description": "Multi-file lab definition. When present, takes precedence over 'file'. The first entry with role 'primary' (or the first entry) is the default view.",
+          "description": "Multi-file unit definition. When present, takes precedence over 'file'. The first entry with role 'primary' (or the first entry) is the default view.",
           "items": {
-            "$ref": "#/$defs/lab_file_entry"
+            "$ref": "#/$defs/unit_file_entry"
           }
         }
       },
       "required": ["id", "file", "title"],
       "additionalProperties": false
     },
-    "lab_file_entry": {
+    "unit_file_entry": {
       "type": "object",
       "properties": {
-        "path": { "type": "string", "description": "File path relative to the lab directory." },
+        "path": { "type": "string", "description": "File path relative to the unit directory." },
         "role": { "type": "string", "enum": ["primary", "supporting"], "default": "supporting", "description": "Role of the file. The primary file is shown by default." }
       },
       "required": ["path"],

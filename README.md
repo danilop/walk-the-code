@@ -2,9 +2,9 @@
 
 AI coding agents help us write code — but can they also help us explain it? Walk-the-code turns any codebase into an interactive **code walkthrough** where readers click a line, read what it does, and see the architecture light up. Use an AI agent to generate the walkthrough, deploy it to GitHub Pages, and keep it in sync as the code evolves.
 
-Supports 30+ languages, Mermaid diagrams with per-line highlighting, nested chapters, guided tours, exercises, and embeddable widgets.
+Supports 30+ languages, Mermaid diagrams with per-line highlighting, nested groups, guided tours, exercises, and embeddable widgets.
 
-**[Live demo →](https://danilop.github.io/micro-gpt-and-beyond/)** — 24 labs walking through a GPT implementation from pure Python to production serving.
+**[Live demo →](https://danilop.github.io/micro-gpt-and-beyond/)** — 24 units walking through a GPT implementation from pure Python to production serving.
 
 ![walk-the-code demo](demo.gif)
 
@@ -62,33 +62,34 @@ Requires [uv](https://docs.astral.sh/uv/) (Python package manager). Install with
 uv tool install "walk-the-code @ git+https://github.com/danilop/walk-the-code"
 ```
 
-Five commands available from anywhere:
+Six commands available from anywhere:
 
 ```bash
 wtc-serve --config path/to/config.json        # start the tutorial server
 wtc-build path/to/config.json                  # build static site for GitHub Pages
 wtc-init                                       # scaffold a new tutorial project (manual authoring)
 wtc-validate path/to/config.json               # validate config and content
+wtc-hash path/to/config.json                   # add/update content hashes in comment files
 walk-the-code --config path/to/config.json     # alias for wtc-serve
 ```
 
 ## How it works
 
-- **config.json** — project metadata, chapter structure, lab definitions, optional run commands, and [custom terminology](#terminology)
+- **config.json** — project metadata, group structure, unit definitions, optional run commands, and [custom terminology](#terminology)
 - **comments/** — line-by-line explanations in a mirror structure, matched to code via content hashes
 - **diagrams/** — shared Mermaid diagrams referenced from comments, with per-line node and flow highlighting
-- **wtc-serve** — local server with code browsing, chapter navigation, and optional code execution via SSE
-- **wtc-build** — bundles everything into `data/labs.json` for static deployment (GitHub Pages)
+- **wtc-serve** — local server with code browsing, group navigation, and optional code execution via SSE
+- **wtc-build** — bundles everything into `data/units.json` for static deployment (GitHub Pages)
 
 ## Features
 
 ### Guided tour mode
 
-Click "Start Guided Tour" in the lab overview, or add `?tour=true` to the URL. Steps through all annotated lines with a persistent control bar.
+Click "Start Guided Tour" in the unit overview, or add `?tour=true` to the URL. Steps through all annotated lines with a persistent control bar.
 
-### Multi-file labs
+### Multi-file units
 
-Labs can display multiple source files with a tab bar. Use `files` instead of `file`:
+Units can display multiple source files with a tab bar. Use `files` instead of `file`:
 
 ```json
 {
@@ -100,17 +101,17 @@ Labs can display multiple source files with a tab bar. Use `files` instead of `f
 
 Comments go in `comments/my_app/main.json` and `comments/my_app/utils.json`.
 
-### Nested chapters
+### Nested groups
 
-Chapters can contain sub-chapters for hierarchical grouping:
+Groups can contain sub-groups for hierarchical grouping:
 
 ```json
 {
-  "chapters": [{
+  "groups": [{
     "id": "part1", "title": "Part 1",
-    "chapters": [
-      {"id": "ch1", "title": "Chapter 1", "labs": ["lab1", "lab2"]},
-      {"id": "ch2", "title": "Chapter 2", "labs": ["lab3"]}
+      "groups": [
+      {"id": "ch1", "title": "Group 1", "units": ["unit1", "unit2"]},
+      {"id": "ch2", "title": "Group 2", "units": ["unit3"]}
     ]
   }]
 }
@@ -118,23 +119,23 @@ Chapters can contain sub-chapters for hierarchical grouping:
 
 ### Embedding
 
-Embed a single lab in any page:
+Embed a single unit in any page:
 
 ```html
-<iframe src="https://your-site.github.io/embed.html?lab=my_lab"
+<iframe src="https://your-site.github.io/embed.html?unit=my_unit"
   width="100%" height="500"
   sandbox="allow-scripts allow-same-origin"
   loading="lazy"></iframe>
 ```
 
-URL params: `lab` (required), `file`, `line`, `tour=true`. Supports postMessage API: send `{type:'wtc:selectLine', line:N}`, receive `{type:'wtc:lineSelected', line:N, lab:'id'}`.
+URL params: `unit` (required), `file`, `line`, `tour=true`. Supports postMessage API: send `{type:'wtc:selectLine', line:N}`, receive `{type:'wtc:lineSelected', line:N, unit:'id'}`.
 
 ### Running code
 
-Add `run_command` to any lab. The Run button appears in the browser when using the local server:
+Add `run_command` to any unit. The Run button appears in the browser when using the local server:
 
 ```json
-{"id": "my_lab", "file": "pi.py", "run_command": ["python3", "pi.py"]}
+{"id": "my_unit", "file": "pi.py", "run_command": ["python3", "pi.py"]}
 ```
 
 Use `sh -c "..."` for compile-then-run languages. Code execution only works with the local server — static deployments are read-only.
@@ -172,7 +173,7 @@ Example for [GoatCounter](https://www.goatcounter.com/):
 
 Python, JavaScript, TypeScript, C, C++, Rust, Go, Java, Ruby, PHP, Swift, Kotlin, Scala, C#, Lua, R, Bash, YAML, JSON, XML, HTML, CSS, SCSS, SQL, Markdown, Dockerfile, HCL/Terraform, Protocol Buffers, Zig, Dart, Elixir, Haskell, OCaml, Clojure.
 
-Language is auto-detected from the file extension. Override per-lab with `"language": "rust"`.
+Language is auto-detected from the file extension. Override per-unit with `"language": "rust"`.
 
 ---
 
@@ -189,44 +190,44 @@ This section covers manual walkthrough creation and the full config reference. I
 | `title` | no | Project title shown on the index page |
 | `tagline` | no | Subtitle shown below the title |
 | `repo_url` | no | Repository URL for the GitHub corner link |
-| `language` | no | Default language for all labs (auto-detected from file extension if omitted) |
+| `language` | no | Default language for all units (auto-detected from file extension if omitted) |
 | `code_dir` | no | Path to the code directory, relative to config.json (defaults to `.`) |
 | `terminology` | no | Custom display names for hierarchy levels (see [Terminology](#terminology)) |
 | `analytics_file` | no | Path to an HTML file injected before `</body>` on all pages |
-| `chapters` | no | Array of chapter objects that group labs |
-| `labs` | yes | Array of lab objects |
+| `groups` | no | Array of group objects that organize units |
+| `units` | yes | Array of unit objects |
 
-#### Chapter fields
+#### Group fields
 
 | Field | Required | Description |
 |---|---|---|
-| `id` | yes | Unique chapter identifier |
-| `title` | yes | Chapter title |
-| `description` | no | HTML description shown on the chapter page |
-| `diagram` | no | Inline Mermaid source rendered on the chapter page |
+| `id` | yes | Unique group identifier |
+| `title` | yes | Group title |
+| `description` | no | HTML description shown on the group page |
+| `diagram` | no | Inline Mermaid source rendered on the group page |
 | `comparison_diagram` | no | References a `.mmd` file in `diagrams/` |
-| `labs` | no | Ordered list of lab IDs belonging to this chapter |
-| `chapters` | no | Array of sub-chapter objects for hierarchical grouping |
+| `units` | no | Ordered list of unit IDs belonging to this group |
+| `groups` | no | Array of sub-group objects for hierarchical grouping |
 | `knowledge_checks` | no | Array of multiple-choice quiz objects |
 
-#### Lab fields
+#### Unit fields
 
 | Field | Required | Description |
 |---|---|---|
-| `id` | yes | Unique lab identifier (matches a subdirectory in `code_dir`) |
+| `id` | yes | Unique unit identifier — used as a subdirectory under `code_dir` (code is at `code_dir/<id>/<file>`) |
 | `file` | yes | Source file to display |
-| `files` | no | Array of `{path, role}` objects for multi-file labs (overrides `file`) |
-| `title` | yes | Lab title |
-| `tagline` | no | One-line summary shown on index and chapter pages |
+| `files` | no | Array of `{path, role}` objects for multi-file units (overrides `file`) |
+| `title` | yes | Unit title |
+| `tagline` | no | One-line summary shown on index and group pages |
 | `description` | no | HTML overview shown before any line is selected |
-| `language` | no | Override the default language for this lab |
-| `run_command` | no | Command to execute the lab (enables Run button in server mode) |
+| `language` | no | Override the default language for this unit |
+| `run_command` | no | Command to execute the unit (enables Run button in server mode) |
 | `learning_objectives` | no | Array of strings describing learning outcomes |
 | `exercises` | no | Array of `{prompt, hint}` objects shown with completion checkboxes |
 
 #### Terminology
 
-Customize the display names for the two hierarchy levels. The JSON keys (`chapters`, `labs`) never change — only the UI labels do.
+Customize the display names for the two hierarchy levels. The JSON keys (`groups`, `units`) never change — only the UI labels do.
 
 ```json
 {
@@ -241,7 +242,7 @@ Defaults: `Group`/`Groups` and `Unit`/`Units`. Plurals are auto-derived by appen
 
 ### Comment format
 
-Comments live in `comments/<lab_id>/<filename_without_ext>.json`:
+Comments live in `comments/<unit_id>/<filename_without_ext>.json`:
 
 ```json
 {
@@ -258,7 +259,7 @@ Comments live in `comments/<lab_id>/<filename_without_ext>.json`:
 | Field | Required | Description |
 |---|---|---|
 | `text` | yes | HTML explanation shown in the side panel |
-| `hash` | yes | SHA-256 prefix of the code line (auto-generated by `add_hashes.py`) |
+| `hash` | yes | SHA-256 prefix of the code line (auto-generated by `wtc-hash`) |
 | `important` | no | Marks this line as a key concept (orange gutter dot) |
 | `diagram` | no | References a `.mmd` file in `diagrams/` by name (without extension) |
 | `highlight` | no | Node IDs to highlight, or `{nodes, links}` for flow highlighting |
@@ -273,21 +274,21 @@ Dots brighten on hover. A persistent legend is shown below the progress bar.
 
 #### Stale annotation detection
 
-Each comment stores a SHA-256 hash of the code line. When code changes but the comment isn't updated, the viewer shows a warning. Run `add_hashes.py` after editing comments:
+Each comment stores a SHA-256 hash of the code line. When code changes but the comment isn't updated, the viewer shows a warning. Run `wtc-hash` after editing comments:
 
 ```bash
-uv run python add_hashes.py
+wtc-hash path/to/config.json
 ```
 
 ### Diagrams
 
 Place `.mmd` files in `diagrams/`. Reference them from comments by filename (without `.mmd`). A single diagram can be shared across multiple files with different `highlight` values — the reader sees the same architecture with different nodes lit up as they navigate.
 
-Chapters can also have inline Mermaid diagrams via the `diagram` field (raw Mermaid source, not a file reference).
+Groups can also have inline Mermaid diagrams via the `diagram` field (raw Mermaid source, not a file reference).
 
 ### Exercises and knowledge checks
 
-Labs can have exercises (hands-on prompts with optional hints):
+Units can have exercises (hands-on prompts with optional hints):
 
 ```json
 {
@@ -300,9 +301,9 @@ Labs can have exercises (hands-on prompts with optional hints):
 }
 ```
 
-Exercises render in the lab overview with completion checkboxes (persisted in localStorage).
+Exercises render in the unit overview with completion checkboxes (persisted in localStorage).
 
-Chapters can have knowledge checks (multiple-choice quizzes):
+Groups can have knowledge checks (multiple-choice quizzes):
 
 ```json
 {
@@ -323,11 +324,11 @@ Chapters can have knowledge checks (multiple-choice quizzes):
 wtc-validate path/to/config.json
 ```
 
-Checks: required fields, file existence, JSON validity, diagram references, line ranges, hash freshness, chapter references, coverage.
+Checks: required fields, file existence, JSON validity, diagram references, line ranges, hash freshness, group references, coverage.
 
 ### How-to guides
 
-#### Create your first lab
+#### Create your first unit
 
 1. Write your code file (e.g. `samples/hello.py`)
 2. Create `comments/hello/hello.json`:
@@ -337,13 +338,13 @@ Checks: required fields, file existence, JSON validity, diagram references, line
      "5": { "text": "This is where the main logic starts.", "important": true }
    }
    ```
-3. Add the lab to `config.json`:
+3. Add the unit to `config.json`:
    ```json
    { "id": "hello", "file": "hello.py", "title": "Hello World" }
    ```
-4. Run `uv run python add_hashes.py` then `wtc-serve --config config.json`
+4. Run `wtc-hash config.json` then `wtc-serve --config config.json`
 
-#### Add diagrams to a lab
+#### Add diagrams to a unit
 
 1. Create `diagrams/data_flow.mmd`:
    ```
@@ -375,7 +376,7 @@ Ask your agent:
 
 > Run `wtc-validate --strict walk-the-code/config.json` and fix all stale annotations. Update the explanations to match the current code.
 
-The validator reports which annotations are out of sync. The agent updates only the affected comment files and re-runs `add_hashes.py`.
+The validator reports which annotations are out of sync. The agent updates only the affected comment files and re-runs `wtc-hash`.
 
 ### CI/CD validation
 
@@ -425,12 +426,12 @@ jobs:
           WTC_PYTHON="$(uv tool dir)/walk-the-code/bin/python"
           WTC_ASSETS=$("$WTC_PYTHON" -c "from walk_the_code import ASSETS_DIR; print(ASSETS_DIR)")
           mkdir -p _site/data
-          for f in index.html lab.html chapter.html embed.html favicon.svg style.css site.js \
-                   lab.js lab-state.js lab-data.js lab-render.js lab-edit.js lab-search.js \
-                   lab-tour.js terminal.js chapter.js embed.js; do
+          for f in index.html unit.html group.html embed.html favicon.svg style.css site.js \
+                   unit.js unit-state.js unit-data.js unit-render.js unit-edit.js unit-search.js \
+                   unit-tour.js terminal.js group.js embed.js; do
             [ -f "$WTC_ASSETS/$f" ] && cp "$WTC_ASSETS/$f" _site/
           done
-          cp walk-the-code/data/labs.json _site/data/
+          cp walk-the-code/data/units.json _site/data/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
@@ -443,8 +444,8 @@ Enable GitHub Pages (Settings → Pages → Source: GitHub Actions) and the walk
 ## Troubleshooting
 
 - **"Port already in use"** — Try `wtc-serve 8001 --config config.json`
-- **"Lab not found"** — Check that the lab `id` matches a subdirectory in `code_dir`
-- **Stale annotations** — Run `uv run python add_hashes.py` after editing code
+- **"Unit not found"** — Check that the unit `id` matches a subdirectory in `code_dir`
+- **Stale annotations** — Run `wtc-hash` after editing code
 - **Diagrams not rendering** — Verify the `.mmd` file exists and the `diagram` field matches the filename (without `.mmd`)
 - **Run button missing** — Only appears in server mode with `run_command` set
 - **"Clone repo to run"** — Install as a CLI tool (`uv tool install ...`) or run `python3 server.py`

@@ -159,10 +159,10 @@ class TestLoadConfig(unittest.TestCase):
         expected = str((EXAMPLE_DIR / "samples").resolve())
         self.assertEqual(cfg["_code_dir"], expected)
 
-    def test_labs_present(self):
+    def test_units_present(self):
         cfg = load_config(EXAMPLE_DIR / "config.json")
-        self.assertEqual(len(cfg["labs"]), 2)
-        ids = [l["id"] for l in cfg["labs"]]
+        self.assertEqual(len(cfg["units"]), 2)
+        ids = [l["id"] for l in cfg["units"]]
         self.assertIn("monte_carlo_python", ids)
         self.assertIn("monte_carlo_java", ids)
 
@@ -181,7 +181,7 @@ class TestLoadConfig(unittest.TestCase):
                 os.unlink(f.name)
 
     def test_empty_config(self):
-        """A config with no labs or code_dir should still produce _config_dir and _code_dir."""
+        """A config with no units or code_dir should still produce _config_dir and _code_dir."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump({}, f)
             f.flush()
@@ -249,33 +249,33 @@ class TestServer(unittest.TestCase):
         self.assertIn("tagline", data)
         self.assertIn("repo_url", data)
 
-    # /api/labs
-    def test_api_labs(self):
-        status, data = self._get_json("/api/labs")
+    # /api/units
+    def test_api_units(self):
+        status, data = self._get_json("/api/units")
         self.assertEqual(status, 200)
         self.assertIsInstance(data, list)
         self.assertEqual(len(data), 2)
 
-    def test_api_labs_fields(self):
-        _, data = self._get_json("/api/labs")
-        lab = data[0]
+    def test_api_units_fields(self):
+        _, data = self._get_json("/api/units")
+        unit = data[0]
         for key in ("id", "title", "tagline", "description", "learning_objectives", "file", "language"):
-            self.assertIn(key, lab, f"Missing key: {key}")
+            self.assertIn(key, unit, f"Missing key: {key}")
 
-    def test_api_labs_language_detection(self):
-        _, data = self._get_json("/api/labs")
-        py_lab = next(l for l in data if l["id"] == "monte_carlo_python")
-        java_lab = next(l for l in data if l["id"] == "monte_carlo_java")
-        self.assertEqual(py_lab["language"], "python")
-        self.assertEqual(java_lab["language"], "java")
+    def test_api_units_language_detection(self):
+        _, data = self._get_json("/api/units")
+        py_unit = next(l for l in data if l["id"] == "monte_carlo_python")
+        java_unit = next(l for l in data if l["id"] == "monte_carlo_java")
+        self.assertEqual(py_unit["language"], "python")
+        self.assertEqual(java_unit["language"], "java")
 
-    # /api/chapters (empty in example config)
-    def test_api_chapters(self):
-        status, data = self._get_json("/api/chapters")
+    # /api/groups (empty in example config)
+    def test_api_groups(self):
+        status, data = self._get_json("/api/groups")
         self.assertEqual(status, 200)
         self.assertIsInstance(data, list)
 
-    # /api/code/<lab_id>
+    # /api/code/<unit_id>
     def test_api_code_python(self):
         status, data = self._get_json("/api/code/monte_carlo_python")
         self.assertEqual(status, 200)
@@ -293,11 +293,11 @@ class TestServer(unittest.TestCase):
         self.assertEqual(data["language"], "java")
 
     def test_api_code_not_found(self):
-        status, data = self._get_json("/api/code/nonexistent_lab")
+        status, data = self._get_json("/api/code/nonexistent_unit")
         self.assertEqual(status, 404)
         self.assertIn("error", data)
 
-    # /api/explanations/<lab_id>
+    # /api/explanations/<unit_id>
     def test_api_explanations_python(self):
         status, data = self._get_json("/api/explanations/monte_carlo_python")
         self.assertEqual(status, 200)
@@ -311,8 +311,8 @@ class TestServer(unittest.TestCase):
         self.assertIn("1", data)
 
     def test_api_explanations_nonexistent(self):
-        """Non-existent lab returns empty dict."""
-        status, data = self._get_json("/api/explanations/no_such_lab")
+        """Non-existent unit returns empty dict."""
+        status, data = self._get_json("/api/explanations/no_such_unit")
         self.assertEqual(status, 200)
         self.assertEqual(data, {})
 
@@ -373,65 +373,65 @@ class TestBuilder(unittest.TestCase):
 
     def test_build_creates_output(self):
         self._run_build()
-        output = self.tmpdir / "example" / "data" / "labs.json"
+        output = self.tmpdir / "example" / "data" / "units.json"
         self.assertTrue(output.exists())
 
     def test_build_output_structure(self):
         self._run_build()
-        output = self.tmpdir / "example" / "data" / "labs.json"
+        output = self.tmpdir / "example" / "data" / "units.json"
         bundle = json.loads(output.read_text())
         self.assertIn("config", bundle)
-        self.assertIn("labs", bundle)
+        self.assertIn("units", bundle)
         self.assertIn("diagrams", bundle)
-        self.assertIn("chapters", bundle)
+        self.assertIn("groups", bundle)
 
     def test_build_config_section(self):
         self._run_build()
-        bundle = json.loads((self.tmpdir / "example" / "data" / "labs.json").read_text())
+        bundle = json.loads((self.tmpdir / "example" / "data" / "units.json").read_text())
         self.assertEqual(bundle["config"]["title"], "Monte Carlo Pi")
 
-    def test_build_labs_count(self):
+    def test_build_units_count(self):
         self._run_build()
-        bundle = json.loads((self.tmpdir / "example" / "data" / "labs.json").read_text())
-        self.assertEqual(len(bundle["labs"]), 2)
+        bundle = json.loads((self.tmpdir / "example" / "data" / "units.json").read_text())
+        self.assertEqual(len(bundle["units"]), 2)
 
-    def test_build_lab_has_code(self):
+    def test_build_unit_has_code(self):
         self._run_build()
-        bundle = json.loads((self.tmpdir / "example" / "data" / "labs.json").read_text())
-        py_lab = next(l for l in bundle["labs"] if l["id"] == "monte_carlo_python")
-        self.assertIn("estimate_pi", py_lab["code"])
+        bundle = json.loads((self.tmpdir / "example" / "data" / "units.json").read_text())
+        py_unit = next(l for l in bundle["units"] if l["id"] == "monte_carlo_python")
+        self.assertIn("estimate_pi", py_unit["code"])
 
-    def test_build_lab_has_explanations(self):
+    def test_build_unit_has_explanations(self):
         self._run_build()
-        bundle = json.loads((self.tmpdir / "example" / "data" / "labs.json").read_text())
-        py_lab = next(l for l in bundle["labs"] if l["id"] == "monte_carlo_python")
-        self.assertIn("1", py_lab["explanations"])
+        bundle = json.loads((self.tmpdir / "example" / "data" / "units.json").read_text())
+        py_unit = next(l for l in bundle["units"] if l["id"] == "monte_carlo_python")
+        self.assertIn("1", py_unit["explanations"])
 
     def test_build_diagrams(self):
         self._run_build()
-        bundle = json.loads((self.tmpdir / "example" / "data" / "labs.json").read_text())
+        bundle = json.loads((self.tmpdir / "example" / "data" / "units.json").read_text())
         self.assertIn("monte_carlo", bundle["diagrams"])
         self.assertIn("graph TD", bundle["diagrams"]["monte_carlo"])
 
     def test_build_language_detection(self):
         self._run_build()
-        bundle = json.loads((self.tmpdir / "example" / "data" / "labs.json").read_text())
-        py_lab = next(l for l in bundle["labs"] if l["id"] == "monte_carlo_python")
-        java_lab = next(l for l in bundle["labs"] if l["id"] == "monte_carlo_java")
-        self.assertEqual(py_lab["language"], "python")
-        self.assertEqual(java_lab["language"], "java")
+        bundle = json.loads((self.tmpdir / "example" / "data" / "units.json").read_text())
+        py_unit = next(l for l in bundle["units"] if l["id"] == "monte_carlo_python")
+        java_unit = next(l for l in bundle["units"] if l["id"] == "monte_carlo_java")
+        self.assertEqual(py_unit["language"], "python")
+        self.assertEqual(java_unit["language"], "java")
 
     def test_build_idempotent(self):
         """Running build twice should produce identical output."""
         self._run_build()
-        out1 = (self.tmpdir / "example" / "data" / "labs.json").read_text()
+        out1 = (self.tmpdir / "example" / "data" / "units.json").read_text()
         self._run_build()
-        out2 = (self.tmpdir / "example" / "data" / "labs.json").read_text()
+        out2 = (self.tmpdir / "example" / "data" / "units.json").read_text()
         self.assertEqual(out1, out2)
 
 
 class TestBuilderValidation(unittest.TestCase):
-    """Tests for builder validation: out-of-range lines, missing diagrams, stale hashes, chapter refs."""
+    """Tests for builder validation: out-of-range lines, missing diagrams, stale hashes, group refs."""
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
@@ -445,22 +445,22 @@ class TestBuilderValidation(unittest.TestCase):
         config_dir = self.tmpdir / "project"
         config_dir.mkdir(parents=True, exist_ok=True)
 
-        lab_id = "test_lab"
+        unit_id = "test_unit"
         filename = "main.py"
 
-        if "labs" not in config_data:
-            config_data["labs"] = [{"id": lab_id, "file": filename, "title": "Test"}]
+        if "units" not in config_data:
+            config_data["units"] = [{"id": unit_id, "file": filename, "title": "Test"}]
 
         # Resolve code_dir
         code_dir_name = config_data.get("code_dir", ".")
         code_base = config_dir / code_dir_name
-        code_path = code_base / lab_id
+        code_path = code_base / unit_id
         code_path.mkdir(parents=True, exist_ok=True)
         (code_path / filename).write_text(code_content)
 
         # Explanations
         if explanations is not None:
-            exp_dir = config_dir / "comments" / lab_id
+            exp_dir = config_dir / "comments" / unit_id
             exp_dir.mkdir(parents=True, exist_ok=True)
             (exp_dir / "main.json").write_text(json.dumps(explanations))
 
@@ -542,8 +542,8 @@ class TestBuilderValidation(unittest.TestCase):
             diagrams={"flow": "graph TD\n  A-->B"},
         )
         self._run_build(config_path)
-        bundle = json.loads((config_path.parent / "data" / "labs.json").read_text())
-        highlight = bundle["labs"][0]["explanations"]["1"]["highlight"]
+        bundle = json.loads((config_path.parent / "data" / "units.json").read_text())
+        highlight = bundle["units"][0]["explanations"]["1"]["highlight"]
         self.assertEqual(highlight["nodes"], ["A"])
         self.assertEqual(highlight["links"], [0])
 
@@ -568,32 +568,32 @@ class TestBuilderValidation(unittest.TestCase):
         )
         self._run_build(config_path)  # Should not raise or warn about hash
 
-    def test_chapter_references_invalid_lab(self):
-        """A chapter referencing a non-existent lab should cause an error."""
+    def test_group_references_invalid_unit(self):
+        """A group referencing a non-existent unit should cause an error."""
         config_path = self._make_project(
-            {"title": "T", "chapters": [
-                {"id": "ch1", "title": "Ch1", "labs": ["nonexistent_lab"]}
+            {"title": "T", "groups": [
+                {"id": "ch1", "title": "Ch1", "units": ["nonexistent_unit"]}
             ]},
             code_content="line1\n",
         )
         exit_code = self._run_build(config_path, expect_exit=True)
         self.assertEqual(exit_code, 1)
 
-    def test_chapter_references_valid_lab(self):
-        """A chapter referencing an existing lab should be fine."""
+    def test_group_references_valid_unit(self):
+        """A group referencing an existing unit should be fine."""
         config_path = self._make_project(
-            {"title": "T", "chapters": [
-                {"id": "ch1", "title": "Ch1", "labs": ["test_lab"]}
+            {"title": "T", "groups": [
+                {"id": "ch1", "title": "Ch1", "units": ["test_unit"]}
             ]},
             code_content="line1\n",
         )
         self._run_build(config_path)  # Should not raise
 
-    def test_chapter_missing_comparison_diagram(self):
-        """A chapter with a comparison_diagram that does not exist should error."""
+    def test_group_missing_comparison_diagram(self):
+        """A group with a comparison_diagram that does not exist should error."""
         config_path = self._make_project(
-            {"title": "T", "chapters": [
-                {"id": "ch1", "title": "Ch1", "labs": ["test_lab"],
+            {"title": "T", "groups": [
+                {"id": "ch1", "title": "Ch1", "units": ["test_unit"],
                  "comparison_diagram": "missing_diag"}
             ]},
             code_content="line1\n",
@@ -601,10 +601,10 @@ class TestBuilderValidation(unittest.TestCase):
         exit_code = self._run_build(config_path, expect_exit=True)
         self.assertEqual(exit_code, 1)
 
-    def test_chapter_valid_comparison_diagram(self):
+    def test_group_valid_comparison_diagram(self):
         config_path = self._make_project(
-            {"title": "T", "chapters": [
-                {"id": "ch1", "title": "Ch1", "labs": ["test_lab"],
+            {"title": "T", "groups": [
+                {"id": "ch1", "title": "Ch1", "units": ["test_unit"],
                  "comparison_diagram": "comp"}
             ]},
             code_content="line1\n",
@@ -629,27 +629,27 @@ class TestBuilderEdgeCases(unittest.TestCase):
         path.write_text(json.dumps(data))
         return path
 
-    def test_empty_labs_list(self):
-        """Config with no labs should build successfully."""
-        config_path = self._make_config({"title": "Empty", "labs": []})
+    def test_empty_units_list(self):
+        """Config with no units should build successfully."""
+        config_path = self._make_config({"title": "Empty", "units": []})
         with patch.object(sys, "argv", ["wtc-build", str(config_path)]):
             from walk_the_code.builder import build
             build()
-        output = self.tmpdir / "proj" / "data" / "labs.json"
+        output = self.tmpdir / "proj" / "data" / "units.json"
         self.assertTrue(output.exists())
         bundle = json.loads(output.read_text())
-        self.assertEqual(bundle["labs"], [])
+        self.assertEqual(bundle["units"], [])
         self.assertEqual(bundle["diagrams"], {})
 
-    def test_no_labs_key(self):
-        """Config with no labs key should default to empty."""
+    def test_no_units_key(self):
+        """Config with no units key should default to empty."""
         config_path = self._make_config({"title": "NoLabs"})
         with patch.object(sys, "argv", ["wtc-build", str(config_path)]):
             from walk_the_code.builder import build
             build()
-        output = self.tmpdir / "proj" / "data" / "labs.json"
+        output = self.tmpdir / "proj" / "data" / "units.json"
         bundle = json.loads(output.read_text())
-        self.assertEqual(bundle["labs"], [])
+        self.assertEqual(bundle["units"], [])
 
     def test_missing_code_file(self):
         """When the code file does not exist, code should be empty string."""
@@ -657,7 +657,7 @@ class TestBuilderEdgeCases(unittest.TestCase):
         config_dir.mkdir(parents=True, exist_ok=True)
         config_data = {
             "title": "T",
-            "labs": [{"id": "ghost", "file": "missing.py", "title": "Ghost"}],
+            "units": [{"id": "ghost", "file": "missing.py", "title": "Ghost"}],
         }
         config_path = config_dir / "config.json"
         config_path.write_text(json.dumps(config_data))
@@ -666,20 +666,20 @@ class TestBuilderEdgeCases(unittest.TestCase):
             from walk_the_code.builder import build
             build()
 
-        bundle = json.loads((config_dir / "data" / "labs.json").read_text())
-        self.assertEqual(bundle["labs"][0]["code"], "")
+        bundle = json.loads((config_dir / "data" / "units.json").read_text())
+        self.assertEqual(bundle["units"][0]["code"], "")
 
-    def test_lab_with_no_annotations(self):
-        """A lab with no comments file should have empty explanations."""
+    def test_unit_with_no_annotations(self):
+        """A unit with no comments file should have empty explanations."""
         config_dir = self.tmpdir / "proj"
         config_dir.mkdir(parents=True, exist_ok=True)
-        code_dir = config_dir / "bare_lab"
+        code_dir = config_dir / "bare_unit"
         code_dir.mkdir()
         (code_dir / "test.py").write_text("print('hi')\n")
 
         config_data = {
             "title": "T",
-            "labs": [{"id": "bare_lab", "file": "test.py", "title": "Bare"}],
+            "units": [{"id": "bare_unit", "file": "test.py", "title": "Bare"}],
         }
         config_path = config_dir / "config.json"
         config_path.write_text(json.dumps(config_data))
@@ -688,14 +688,14 @@ class TestBuilderEdgeCases(unittest.TestCase):
             from walk_the_code.builder import build
             build()
 
-        bundle = json.loads((config_dir / "data" / "labs.json").read_text())
-        self.assertEqual(bundle["labs"][0]["explanations"], {})
+        bundle = json.loads((config_dir / "data" / "units.json").read_text())
+        self.assertEqual(bundle["units"][0]["explanations"], {})
 
     def test_no_diagrams_directory(self):
         """Build should work fine when there is no diagrams/ directory."""
         config_dir = self.tmpdir / "proj"
         config_dir.mkdir(parents=True, exist_ok=True)
-        config_data = {"title": "T", "labs": []}
+        config_data = {"title": "T", "units": []}
         config_path = config_dir / "config.json"
         config_path.write_text(json.dumps(config_data))
 
@@ -703,7 +703,7 @@ class TestBuilderEdgeCases(unittest.TestCase):
             from walk_the_code.builder import build
             build()
 
-        bundle = json.loads((config_dir / "data" / "labs.json").read_text())
+        bundle = json.loads((config_dir / "data" / "units.json").read_text())
         self.assertEqual(bundle["diagrams"], {})
 
 
@@ -744,13 +744,13 @@ class TestServerEmptyConfig(unittest.TestCase):
         conn.close()
         return resp.status, json.loads(body)
 
-    def test_empty_labs(self):
-        status, data = self._get_json("/api/labs")
+    def test_empty_units(self):
+        status, data = self._get_json("/api/units")
         self.assertEqual(status, 200)
         self.assertEqual(data, [])
 
-    def test_empty_chapters(self):
-        status, data = self._get_json("/api/chapters")
+    def test_empty_groups(self):
+        status, data = self._get_json("/api/groups")
         self.assertEqual(status, 200)
         self.assertEqual(data, [])
 
@@ -759,11 +759,11 @@ class TestServerEmptyConfig(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(data["title"], "Empty")
 
-    def test_code_for_nonexistent_lab(self):
+    def test_code_for_nonexistent_unit(self):
         status, data = self._get_json("/api/code/nope")
         self.assertEqual(status, 404)
 
-    def test_explanations_for_nonexistent_lab(self):
+    def test_explanations_for_nonexistent_unit(self):
         status, data = self._get_json("/api/explanations/nope")
         self.assertEqual(status, 200)
         self.assertEqual(data, {})
@@ -787,22 +787,22 @@ class TestValidator(unittest.TestCase):
         config_dir = self.tmpdir / "project"
         config_dir.mkdir(parents=True, exist_ok=True)
 
-        lab_id = "test_lab"
+        unit_id = "test_unit"
         filename = "main.py"
 
-        if "labs" not in config_data:
-            config_data["labs"] = [{"id": lab_id, "file": filename, "title": "Test"}]
+        if "units" not in config_data:
+            config_data["units"] = [{"id": unit_id, "file": filename, "title": "Test"}]
 
         # Resolve code_dir
         code_dir_name = config_data.get("code_dir", ".")
         code_base = config_dir / code_dir_name
-        code_path = code_base / lab_id
+        code_path = code_base / unit_id
         code_path.mkdir(parents=True, exist_ok=True)
         (code_path / filename).write_text(code_content)
 
         # Explanations (as dict to be serialized, or raw string)
         if explanations is not None or comment_raw is not None:
-            exp_dir = config_dir / "comments" / lab_id
+            exp_dir = config_dir / "comments" / unit_id
             exp_dir.mkdir(parents=True, exist_ok=True)
             if comment_raw is not None:
                 (exp_dir / "main.json").write_text(comment_raw)
@@ -859,27 +859,27 @@ class TestValidator(unittest.TestCase):
 
     def test_missing_title(self):
         """Missing title should produce a warning (not an error)."""
-        config_path = self._make_project({"labs": [{"id": "test_lab", "file": "main.py", "title": "T"}]})
+        config_path = self._make_project({"units": [{"id": "test_unit", "file": "main.py", "title": "T"}]})
         exit_code, output = self._run_validate(config_path)
         self.assertEqual(exit_code, 0)
         self.assertIn("No top-level 'title' field", output)
 
-    def test_missing_labs(self):
-        """Missing labs should produce an error."""
+    def test_missing_units(self):
+        """Missing units should produce an error."""
         config_dir = self.tmpdir / "project"
         config_dir.mkdir(parents=True, exist_ok=True)
         config_path = config_dir / "config.json"
-        config_path.write_text(json.dumps({"title": "No Labs"}))
+        config_path.write_text(json.dumps({"title": "No Units"}))
         exit_code, output = self._run_validate(config_path)
         self.assertEqual(exit_code, 1)
-        self.assertIn("Missing required top-level field: labs", output)
+        self.assertIn("Missing required top-level field: units", output)
 
-    def test_missing_lab_required_fields(self):
-        """Labs missing id, file, or title should produce errors."""
+    def test_missing_unit_required_fields(self):
+        """Units missing id, file, or title should produce errors."""
         config_dir = self.tmpdir / "project"
         config_dir.mkdir(parents=True, exist_ok=True)
         config_path = config_dir / "config.json"
-        config_path.write_text(json.dumps({"title": "T", "labs": [{}]}))
+        config_path.write_text(json.dumps({"title": "T", "units": [{}]}))
         exit_code, output = self._run_validate(config_path)
         self.assertEqual(exit_code, 1)
         self.assertIn("missing required field 'id'", output)
@@ -887,13 +887,13 @@ class TestValidator(unittest.TestCase):
         self.assertIn("missing required field 'title'", output)
 
     def test_code_file_not_found(self):
-        """A lab referencing a non-existent code file should produce an error."""
+        """A unit referencing a non-existent code file should produce an error."""
         config_dir = self.tmpdir / "project"
         config_dir.mkdir(parents=True, exist_ok=True)
         config_path = config_dir / "config.json"
         config_path.write_text(json.dumps({
             "title": "T",
-            "labs": [{"id": "ghost", "file": "missing.py", "title": "Ghost"}]
+            "units": [{"id": "ghost", "file": "missing.py", "title": "Ghost"}]
         }))
         exit_code, output = self._run_validate(config_path)
         self.assertEqual(exit_code, 1)
@@ -967,17 +967,17 @@ class TestValidator(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("attached to a blank line", output)
 
-    def test_chapter_referencing_invalid_lab(self):
-        """A chapter referencing a non-existent lab should produce an error."""
+    def test_group_referencing_invalid_unit(self):
+        """A group referencing a non-existent unit should produce an error."""
         config_path = self._make_project(
-            {"title": "T", "chapters": [
-                {"id": "ch1", "title": "Ch1", "labs": ["nonexistent_lab"]}
+            {"title": "T", "groups": [
+                {"id": "ch1", "title": "Ch1", "units": ["nonexistent_unit"]}
             ]},
             code_content="line1\n",
         )
         exit_code, output = self._run_validate(config_path)
         self.assertEqual(exit_code, 1)
-        self.assertIn("nonexistent_lab", output)
+        self.assertIn("nonexistent_unit", output)
         self.assertIn("not defined", output)
 
     def test_missing_learning_objectives_warning(self):
@@ -998,8 +998,8 @@ class TestValidator(unittest.TestCase):
         """Valid exercises should not produce errors or warnings about exercises."""
         config_path = self._make_project({
             "title": "T",
-            "labs": [{
-                "id": "test_lab", "file": "main.py", "title": "Test",
+            "units": [{
+                "id": "test_unit", "file": "main.py", "title": "Test",
                 "learning_objectives": ["Learn X"],
                 "exercises": [{"prompt": "Do something"}],
             }],
@@ -1046,8 +1046,8 @@ class TestInit(unittest.TestCase):
         self.assertEqual(config["tagline"], "Test Tagline")
         self.assertEqual(config["repo_url"], "https://example.com")
         self.assertEqual(config["code_dir"], "samples")
-        self.assertIsInstance(config["labs"], list)
-        self.assertIsInstance(config["chapters"], list)
+        self.assertIsInstance(config["units"], list)
+        self.assertIsInstance(config["groups"], list)
 
     def test_handles_empty_inputs_uses_defaults(self):
         """Empty inputs should use default values."""

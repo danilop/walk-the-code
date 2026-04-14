@@ -33,8 +33,8 @@ def serve():
     print(f"walk-the-code running at http://localhost:{port}")
     print(f"  config: {config_path}")
     print(f"  code_dir: {config['_code_dir']}")
-    print(f"  labs: {len(config.get('labs', []))}")
-    print(f"  chapters: {len(config.get('chapters', []))}")
+    print(f"  units: {len(config.get('units', []))}")
+    print(f"  groups: {len(config.get('groups', []))}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -48,7 +48,7 @@ def build():
 
 
 def init():
-    """CLI entry point: wtc-init [--template basic|multilang|chapter] — scaffold a new project."""
+    """CLI entry point: wtc-init [--template basic|multilang|group] — scaffold a new project."""
     from .init import init as _init
     _init()  # --template is parsed from sys.argv inside init()
 
@@ -57,3 +57,9 @@ def validate():
     """CLI entry point: wtc-validate [config_path] — validate project."""
     from .validator import validate as _validate
     _validate()
+
+
+def hash():
+    """CLI entry point: wtc-hash [config_path] — add content hashes to comment files."""
+    from .hasher import hash as _hash
+    _hash()

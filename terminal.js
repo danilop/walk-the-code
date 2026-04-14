@@ -1,9 +1,9 @@
 // @ts-check
 /** @type {EventSource|null} */
 let eventSource = null;
-let labRunning = false;
+let unitRunning = false;
 /** @type {string|null} */
-let currentLabId = null;
+let currentUnitId = null;
 /** @type {(() => string|null)|null} */
 let getModifiedCode = null;
 
@@ -34,12 +34,12 @@ function updateScrollButton() {
 }
 
 /**
- * @param {string} labId
+ * @param {string} unitId
  * @param {boolean} serverMode
  * @param {{ getModifiedCode?: () => string|null }} [options]
  */
-export function initTerminal(labId, serverMode, options) {
-  currentLabId = labId;
+export function initTerminal(unitId, serverMode, options) {
+  currentUnitId = unitId;
   if (options?.getModifiedCode) getModifiedCode = options.getModifiedCode;
   document.getElementById("play-btn").onclick = runLab;
   document.getElementById("stop-btn").onclick = stopLab;
@@ -48,8 +48,8 @@ export function initTerminal(labId, serverMode, options) {
 
   // Kill running process when user navigates away
   window.addEventListener("beforeunload", () => {
-    if (labRunning && currentLabId) {
-      navigator.sendBeacon(`/api/stop/${currentLabId}`);
+    if (unitRunning && currentUnitId) {
+      navigator.sendBeacon(`/api/stop/${currentUnitId}`);
     }
   });
 
@@ -92,7 +92,7 @@ export function initTerminal(labId, serverMode, options) {
 }
 
 function runLab() {
-  if (labRunning) return; labRunning = true;
+  if (unitRunning) return; unitRunning = true;
   autoScroll = true; // Reset auto-scroll on new run
   const panel=document.getElementById("terminal-panel"), output=document.getElementById("terminal-output"), status=document.getElementById("terminal-status");
   panel.classList.add("open"); output.textContent=""; status.textContent="";
@@ -104,7 +104,7 @@ function runLab() {
   const modifiedCode = getModifiedCode ? getModifiedCode() : null;
   if (modifiedCode !== null) {
     // POST modified code to run-modified endpoint, then read streaming response
-    fetch(`/api/run-modified/${currentLabId}`, {
+    fetch(`/api/run-modified/${currentUnitId}`, {
       method: "POST",
       headers: { "Content-Type": "text/plain" },
       body: modifiedCode,
@@ -115,7 +115,7 @@ function runLab() {
       let buffer = "";
       function processChunk() {
         reader.read().then(({done, value}) => {
-          if (done) { labRunning = false; return; }
+          if (done) { unitRunning = false; return; }
           buffer += decoder.decode(value, {stream: true});
           const lines = buffer.split("\n");
           buffer = lines.pop() || "";
@@ -130,7 +130,7 @@ function runLab() {
                   status.className = "terminal-status running";
                   output.innerHTML = `<span class="cmd">$ ${(eventData.cmd || "").replace(/</g, "&lt;")} [modified]</span>\n`;
                 } else if (eventData.state === "done") {
-                  labRunning = false;
+                  unitRunning = false;
                   status.textContent = eventData.exit_code === 0 ? "done" : `exit ${eventData.exit_code}`;
                   status.className = eventData.exit_code === 0 ? "terminal-status" : "terminal-status error";
                   document.getElementById("stop-btn").style.display = "none";
@@ -144,7 +144,7 @@ function runLab() {
           }
           processChunk();
         }).catch(() => {
-          labRunning = false;
+          unitRunning = false;
           status.textContent = "connection lost";
           status.className = "terminal-status error";
           document.getElementById("stop-btn").style.display = "none";
@@ -153,7 +153,7 @@ function runLab() {
       }
       processChunk();
     }).catch(err => {
-      labRunning = false;
+      unitRunning = false;
       output.textContent = `Error: ${err.message}`;
       status.textContent = "error";
       status.className = "terminal-status error";
@@ -162,21 +162,21 @@ function runLab() {
     });
   } else {
     // Original SSE-based run
-    eventSource = new EventSource(`/api/run/${currentLabId}`);
+    eventSource = new EventSource(`/api/run/${currentUnitId}`);
     eventSource.addEventListener("status", e => {
       const d=JSON.parse(e.data);
       if(d.state==="running"){status.innerHTML='<span class="terminal-spinner"></span> running';status.className="terminal-status running";output.innerHTML=`<span class="cmd">$ ${d.cmd.replace(/</g,"&lt;")}</span>\n`;}
-      else if(d.state==="done"){eventSource.close();eventSource=null;labRunning=false;status.textContent=d.exit_code===0?"done":`exit ${d.exit_code}`;status.className=d.exit_code===0?"terminal-status":"terminal-status error";document.getElementById("stop-btn").style.display="none";document.getElementById("play-btn").style.display="inline-flex";}
+      else if(d.state==="done"){eventSource.close();eventSource=null;unitRunning=false;status.textContent=d.exit_code===0?"done":`exit ${d.exit_code}`;status.className=d.exit_code===0?"terminal-status":"terminal-status error";document.getElementById("stop-btn").style.display="none";document.getElementById("play-btn").style.display="inline-flex";}
     });
     eventSource.addEventListener("output", e => { output.textContent+=JSON.parse(e.data).text; scrollIfNeeded(output); });
-    eventSource.onerror = () => { if(eventSource){eventSource.close();eventSource=null;} if(labRunning){labRunning=false;status.textContent="connection lost";status.className="terminal-status error";document.getElementById("stop-btn").style.display="none";document.getElementById("play-btn").style.display="inline-flex";} };
+    eventSource.onerror = () => { if(eventSource){eventSource.close();eventSource=null;} if(unitRunning){unitRunning=false;status.textContent="connection lost";status.className="terminal-status error";document.getElementById("stop-btn").style.display="none";document.getElementById("play-btn").style.display="inline-flex";} };
   }
 }
 
-function stopLab() { fetch(`/api/stop/${currentLabId}`); if(eventSource){eventSource.close();eventSource=null;} labRunning=false; closeTerminal(); }
+function stopLab() { fetch(`/api/stop/${currentUnitId}`); if(eventSource){eventSource.close();eventSource=null;} unitRunning=false; closeTerminal(); }
 
 function closeTerminal() {
-  if(labRunning){fetch(`/api/stop/${currentLabId}`);if(eventSource){eventSource.close();eventSource=null;}labRunning=false;}
+  if(unitRunning){fetch(`/api/stop/${currentUnitId}`);if(eventSource){eventSource.close();eventSource=null;}unitRunning=false;}
   const p=document.getElementById("terminal-panel"); p.classList.remove("open","fullscreen");
   document.getElementById("terminal-maximize").innerHTML="&#x26F6;";
   document.getElementById("stop-btn").style.display="none";
