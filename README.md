@@ -21,8 +21,8 @@ The agent analyzes your codebase and generates everything: `config.json`, line-b
 Then preview locally:
 
 ```bash
-uv tool install "walk-the-code @ git+https://github.com/danilop/walk-the-code"
-wtc-serve --config walk-the-code/config.json
+WTC='uvx --from "walk-the-code @ git+https://github.com/danilop/walk-the-code"'
+$WTC wtc-serve --config walk-the-code/config.json
 # Open http://localhost:8000
 ```
 
@@ -56,21 +56,24 @@ python3 server.py --config example/config.json
 
 Requires [uv](https://docs.astral.sh/uv/) (Python package manager). Install with `curl -LsSf https://astral.sh/uv/install.sh | sh`.
 
-## Install as a CLI tool
+## Run with uvx
+
+No install needed — [uvx](https://docs.astral.sh/uv/guides/tools/) runs the tool directly:
 
 ```bash
-uv tool install "walk-the-code @ git+https://github.com/danilop/walk-the-code"
+WTC='uvx --from "walk-the-code @ git+https://github.com/danilop/walk-the-code"'
+$WTC wtc-serve --config path/to/config.json
 ```
 
-Six commands available from anywhere:
+Six commands available:
 
 ```bash
-wtc-serve --config path/to/config.json        # start the tutorial server
-wtc-build path/to/config.json                  # build static site for GitHub Pages
-wtc-init                                       # scaffold a new tutorial project (manual authoring)
-wtc-validate path/to/config.json               # validate config and content
-wtc-hash path/to/config.json                   # add/update content hashes in comment files
-walk-the-code --config path/to/config.json     # alias for wtc-serve
+$WTC wtc-serve --config path/to/config.json   # start the tutorial server
+$WTC wtc-build path/to/config.json            # build static site for GitHub Pages
+$WTC wtc-init                                 # scaffold a new tutorial project (manual authoring)
+$WTC wtc-validate path/to/config.json          # validate config and content
+$WTC wtc-hash path/to/config.json              # add/update content hashes in comment files
+$WTC walk-the-code --config path/to/config.json # alias for wtc-serve
 ```
 
 ## How it works
@@ -422,8 +425,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - name: Build walkthrough
         run: |
-          uv tool install "walk-the-code @ git+https://github.com/danilop/walk-the-code"
-          wtc-build walk-the-code/config.json
+          WTC='uvx --from "walk-the-code @ git+https://github.com/danilop/walk-the-code"'
+          $WTC wtc-build walk-the-code/config.json
           WTC_PYTHON="$(uv tool dir)/walk-the-code/bin/python"
           WTC_ASSETS=$("$WTC_PYTHON" -c "from walk_the_code import ASSETS_DIR; print(ASSETS_DIR)")
           mkdir -p _site/data
@@ -449,7 +452,7 @@ Enable GitHub Pages (Settings → Pages → Source: GitHub Actions) and the walk
 - **Stale annotations** — Run `wtc-hash` after editing code
 - **Diagrams not rendering** — Verify the `.mmd` file exists and the `diagram` field matches the filename (without `.mmd`)
 - **Run button missing** — Only appears in server mode with `run_command` set
-- **"Clone repo to run"** — Install as a CLI tool (`uv tool install ...`) or run `python3 server.py`
+- **"Clone repo to run"** — Use `uvx --from "walk-the-code @ git+https://github.com/danilop/walk-the-code" wtc-serve --config ...` or run `python3 server.py`
 
 ## Example
 

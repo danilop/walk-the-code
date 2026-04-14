@@ -113,9 +113,10 @@ No symlinks, no duplicated directories — works on all platforms including Wind
    set -e
    PORT="${1:-8000}"
    CONFIG="$(cd "$(dirname "$0")" && pwd)/config.json"
+   WTC='uvx --from "walk-the-code @ git+https://github.com/danilop/walk-the-code"'
    echo "Opening walkthrough at http://localhost:$PORT"
    (sleep 1 && python3 -m webbrowser "http://localhost:$PORT") &
-   exec wtc-serve --config "$CONFIG" "$PORT"
+   exec $WTC wtc-serve --config "$CONFIG" "$PORT"
    ```
    Make it executable (`chmod +x`).
 
@@ -229,6 +230,16 @@ Tell the user to run `./walk-the-code/start.sh` — it starts the server and ope
 - Diagrams render and highlights work
 - Navigation between units and groups is logical
 - The guided tour (`?tour=true`) flows naturally
+
+### Step 9: Link from the README
+
+After deploying to GitHub Pages, add a link to the project's README so readers can discover the walkthrough:
+
+```markdown
+📖 **[Interactive Code Walkthrough](https://<user>.github.io/<repo>/)** — explore the codebase with annotated explanations
+```
+
+Place it near the top of the README (after the project description, before installation instructions) where it's visible without scrolling.
 
 ## Content quality checklist
 
