@@ -1,5 +1,7 @@
 """HTTP server: WTCHandler, ThreadedHTTPServer, SSE streaming."""
 
+from __future__ import annotations
+
 import json
 import os
 import subprocess
@@ -7,10 +9,11 @@ import tempfile
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from socketserver import ThreadingMixIn
+from typing import Any
 from urllib.parse import urlparse, parse_qs
 
 from . import ASSETS_DIR
-from .config import CONTENT_TYPES, detect_language, unit_files, primary_file
+from .config import CONTENT_TYPES, _unit_code_path, detect_language, unit_files, primary_file
 
 
 _running: dict[str, subprocess.Popen] = {}
@@ -26,14 +29,15 @@ def flatten_groups(groups):
 
 
 class WTCHandler(SimpleHTTPRequestHandler):
-    config = None
+    config: dict[str, Any] | None = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ASSETS_DIR), **kwargs)
 
     def _check_origin(self) -> bool:
         """Reject cross-origin requests to dangerous endpoints (CSRF protection)."""
-        port = self.server.server_address[1]
+        addr = self.server.server_address
+        port = addr[1] if isinstance(addr, tuple) else 0
         allowed = {f"http://localhost:{port}", f"http://127.0.0.1:{port}"}
         origin = self.headers.get("Origin")
         if origin:
@@ -44,8 +48,13 @@ class WTCHandler(SimpleHTTPRequestHandler):
             return f"{parsed.scheme}://{parsed.netloc}" in allowed
         return True  # same-origin requests may omit both headers
 
-    def do_GET(self):
+    def _cfg(self) -> dict[str, Any]:
         cfg = self.__class__.config
+        assert cfg is not None
+        return cfg
+
+    def do_GET(self):
+        cfg = self._cfg()
         units = cfg.get("units", [])
         config_dir = Path(cfg["_config_dir"])
         code_dir = Path(cfg["_code_dir"])
@@ -53,10 +62,10 @@ class WTCHandler(SimpleHTTPRequestHandler):
 
         if self.path == "/api/units":
             result = []
-            for l in units:
-                lf = unit_files(l, default_lang)
-                pf = next((f for f in lf if f["role"] == "primary"), lf[0])
-                exp_path = config_dir / "comments" / l["id"] / f"{Path(pf['path']).stem}.json"
+            for u in units:
+                uf = unit_files(u, default_lang)
+                pf = next((f for f in uf if f["role"] == "primary"), uf[0])
+                exp_path = config_dir / "comments" / u["id"] / f"{Path(pf['path']).stem}.json"
                 annotated = 0
                 if exp_path.exists():
                     try:
@@ -64,12 +73,12 @@ class WTCHandler(SimpleHTTPRequestHandler):
                     except (json.JSONDecodeError, OSError):
                         pass
                 result.append({
-                    "id": l["id"], "title": l["title"], "tagline": l.get("tagline", ""),
-                    "description": l.get("description", ""),
-                    "learning_objectives": l.get("learning_objectives", []),
-                    "exercises": l.get("exercises", []),
-                    "file": l["file"], "language": l.get("language", detect_language(l["file"], default_lang)),
-                    "files": lf,
+                    "id": u["id"], "title": u["title"], "tagline": u.get("tagline", ""),
+                    "description": u.get("description", ""),
+                    "learning_objectives": u.get("learning_objectives", []),
+                    "exercises": u.get("exercises", []),
+                    "file": u["file"], "language": u.get("language", detect_language(u["file"], default_lang)),
+                    "files": uf,
                     "annotated_lines": annotated,
                 })
             self._json(result)
@@ -87,7 +96,7 @@ class WTCHandler(SimpleHTTPRequestHandler):
             parsed = urlparse(self.path)
             unit_id = parsed.path[len("/api/code/"):]
             qs = parse_qs(parsed.query)
-            unit = next((l for l in units if l["id"] == unit_id), None)
+            unit = next((u for u in units if u["id"] == unit_id), None)
             if not unit:
                 return self._json({"error": "not found"}, 404)
             req_file = qs.get("file", [None])[0]
@@ -96,7 +105,7 @@ class WTCHandler(SimpleHTTPRequestHandler):
             else:
                 pf = primary_file(unit, default_lang)
                 filename = pf["path"]
-            p = code_dir / unit["id"] / filename
+            p = _unit_code_path(code_dir, unit, filename)
             if p.exists():
                 self._json({"code": p.read_text(), "filename": filename,
                              "language": detect_language(filename, default_lang)})
@@ -106,7 +115,7 @@ class WTCHandler(SimpleHTTPRequestHandler):
             parsed = urlparse(self.path)
             unit_id = parsed.path[len("/api/explanations/"):]
             qs = parse_qs(parsed.query)
-            unit = next((l for l in units if l["id"] == unit_id), None)
+            unit = next((u for u in units if u["id"] == unit_id), None)
             if not unit:
                 return self._json({})
             req_file = qs.get("file", [None])[0]
@@ -157,23 +166,29 @@ class WTCHandler(SimpleHTTPRequestHandler):
         body = json.dumps(data).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", len(body))
+        self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def _kill_running(self, unit_id):
+        if unit_id in _running:
+            try:
+                _running[unit_id].kill()
+            except OSError:
+                pass
+            del _running[unit_id]
 
     def _run_unit(self, unit_id):
         if not self._check_origin():
             return self._json({"error": "forbidden: cross-origin request"}, 403)
-        cfg = self.__class__.config
-        unit = next((l for l in cfg.get("units", []) if l["id"] == unit_id), None)
+        cfg = self._cfg()
+        unit = next((u for u in cfg.get("units", []) if u["id"] == unit_id), None)
         if not unit or "run_command" not in unit:
             return self._json({"error": "not found or no run_command"}, 404)
-        work_dir = Path(cfg["_code_dir"]) / unit["id"]
+        code_dir = Path(cfg["_code_dir"])
+        work_dir = _unit_code_path(code_dir, unit, unit["file"]).parent
         cmd = unit["run_command"]
-        if unit_id in _running:
-            try: _running[unit_id].kill()
-            except OSError: pass
-            del _running[unit_id]
+        self._kill_running(unit_id)
         try:
             proc = subprocess.Popen(cmd, cwd=work_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                     text=True, bufsize=1, env={**os.environ, "PYTHONUNBUFFERED": "1"})
@@ -185,33 +200,40 @@ class WTCHandler(SimpleHTTPRequestHandler):
         self.send_header("Cache-Control", "no-cache")
         self.send_header("X-Accel-Buffering", "no")
         self.end_headers()
+
         def send_event(event, data):
             try:
                 self.wfile.write(f"event: {event}\ndata: {json.dumps(data)}\n\n".encode())
                 self.wfile.flush()
-            except (BrokenPipeError, ConnectionResetError): proc.kill()
+            except (BrokenPipeError, ConnectionResetError):
+                proc.kill()
+
         send_event("status", {"state": "running", "cmd": " ".join(cmd)})
         try:
-            for line in proc.stdout:
-                send_event("output", {"text": line})
+            if proc.stdout:
+                for line in proc.stdout:
+                    send_event("output", {"text": line})
             proc.wait()
             send_event("status", {"state": "done", "exit_code": proc.returncode})
-        except (BrokenPipeError, ConnectionResetError): proc.kill()
-        finally: _running.pop(unit_id, None)
+        except (BrokenPipeError, ConnectionResetError):
+            proc.kill()
+        finally:
+            _running.pop(unit_id, None)
 
     def _run_modified_unit(self, unit_id):
         """Run a unit with modified code posted by the client."""
         if not self._check_origin():
             return self._json({"error": "forbidden: cross-origin request"}, 403)
-        cfg = self.__class__.config
-        unit = next((l for l in cfg.get("units", []) if l["id"] == unit_id), None)
+        cfg = self._cfg()
+        unit = next((u for u in cfg.get("units", []) if u["id"] == unit_id), None)
         if not unit or "run_command" not in unit:
             return self._json({"error": "not found or no run_command"}, 404)
         content_len = int(self.headers.get("Content-Length", 0))
         if content_len == 0 or content_len > 1_000_000:
             return self._json({"error": "invalid content length"}, 400)
         modified_code = self.rfile.read(content_len).decode("utf-8", errors="replace")
-        work_dir = Path(cfg["_code_dir"]) / unit["id"]
+        code_dir = Path(cfg["_code_dir"])
+        work_dir = _unit_code_path(code_dir, unit, unit["file"]).parent
         code_path = work_dir / unit["file"]
         # Write modified code to a temp file in the unit directory
         suffix = code_path.suffix
@@ -223,10 +245,7 @@ class WTCHandler(SimpleHTTPRequestHandler):
         tmp_path = Path(tmp.name)
         # Build command replacing the original file with the temp file
         cmd = [arg.replace(unit["file"], tmp_path.name) for arg in unit["run_command"]]
-        if unit_id in _running:
-            try: _running[unit_id].kill()
-            except OSError: pass
-            del _running[unit_id]
+        self._kill_running(unit_id)
         try:
             proc = subprocess.Popen(cmd, cwd=work_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                     text=True, bufsize=1, env={**os.environ, "PYTHONUNBUFFERED": "1"})
@@ -239,18 +258,23 @@ class WTCHandler(SimpleHTTPRequestHandler):
         self.send_header("Cache-Control", "no-cache")
         self.send_header("X-Accel-Buffering", "no")
         self.end_headers()
+
         def send_event(event, data):
             try:
                 self.wfile.write(f"event: {event}\ndata: {json.dumps(data)}\n\n".encode())
                 self.wfile.flush()
-            except (BrokenPipeError, ConnectionResetError): proc.kill()
+            except (BrokenPipeError, ConnectionResetError):
+                proc.kill()
+
         send_event("status", {"state": "running", "cmd": " ".join(cmd), "modified": True})
         try:
-            for line in proc.stdout:
-                send_event("output", {"text": line})
+            if proc.stdout:
+                for line in proc.stdout:
+                    send_event("output", {"text": line})
             proc.wait()
             send_event("status", {"state": "done", "exit_code": proc.returncode})
-        except (BrokenPipeError, ConnectionResetError): proc.kill()
+        except (BrokenPipeError, ConnectionResetError):
+            proc.kill()
         finally:
             _running.pop(unit_id, None)
             tmp_path.unlink(missing_ok=True)
@@ -259,15 +283,18 @@ class WTCHandler(SimpleHTTPRequestHandler):
         if not self._check_origin():
             return self._json({"error": "forbidden: cross-origin request"}, 403)
         if unit_id in _running:
-            try: _running[unit_id].kill(); _running[unit_id].wait(timeout=2)
-            except (OSError, subprocess.TimeoutExpired): pass
+            try:
+                _running[unit_id].kill()
+                _running[unit_id].wait(timeout=2)
+            except (OSError, subprocess.TimeoutExpired):
+                pass
             _running.pop(unit_id, None)
             self._json({"status": "stopped"})
         else:
             self._json({"status": "not_running"})
 
     # Cache for analytics snippet
-    _analytics_snippet = None
+    _analytics_snippet: str | None = None
     _analytics_loaded = False
 
     @classmethod
@@ -297,7 +324,7 @@ class WTCHandler(SimpleHTTPRequestHandler):
             ct = CONTENT_TYPES.get(ext, "application/octet-stream")
             self.send_response(200)
             self.send_header("Content-Type", ct)
-            self.send_header("Content-Length", len(content))
+            self.send_header("Content-Length", str(len(content)))
             if embed:
                 self.send_header("Content-Security-Policy", "frame-ancestors *")
             elif frame_options:

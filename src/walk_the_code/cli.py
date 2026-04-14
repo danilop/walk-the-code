@@ -14,9 +14,11 @@ def serve():
     i = 0
     while i < len(args):
         if args[i] == "--config" and i + 1 < len(args):
-            config_path = args[i + 1]; i += 2
+            config_path = args[i + 1]
+            i += 2
         elif args[i].isdigit():
-            port = int(args[i]); i += 1
+            port = int(args[i])
+            i += 1
         else:
             i += 1
 

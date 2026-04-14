@@ -7,7 +7,6 @@ import shutil
 import sys
 import tempfile
 import threading
-import time
 import unittest
 from http.client import HTTPConnection
 from pathlib import Path
@@ -17,8 +16,8 @@ from unittest.mock import patch
 SRC_DIR = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(SRC_DIR))
 
-from walk_the_code.config import EXT_TO_LANG, CONTENT_TYPES, _line_hash, detect_language, load_config
-from walk_the_code.server import WTCHandler, ThreadedHTTPServer
+from walk_the_code.config import EXT_TO_LANG, CONTENT_TYPES, _line_hash, _unit_code_path, detect_language, load_config  # noqa: E402
+from walk_the_code.server import WTCHandler, ThreadedHTTPServer  # noqa: E402
 
 EXAMPLE_DIR = Path(__file__).resolve().parent.parent / "example"
 RUN_SERVER_TESTS = os.environ.get("WTC_RUN_SERVER_TESTS") == "1"
@@ -162,7 +161,7 @@ class TestLoadConfig(unittest.TestCase):
     def test_units_present(self):
         cfg = load_config(EXAMPLE_DIR / "config.json")
         self.assertEqual(len(cfg["units"]), 2)
-        ids = [l["id"] for l in cfg["units"]]
+        ids = [u["id"] for u in cfg["units"]]
         self.assertIn("monte_carlo_python", ids)
         self.assertIn("monte_carlo_java", ids)
 
@@ -204,6 +203,34 @@ class TestLoadConfig(unittest.TestCase):
                 self.assertEqual(cfg["_config_dir"], cfg["_code_dir"])
             finally:
                 os.unlink(f.name)
+
+
+class TestUnitCodePath(unittest.TestCase):
+    """Tests for _unit_code_path helper."""
+
+    def test_legacy_without_path(self):
+        """Without path field, resolves as code_dir / id / file."""
+        unit = {"id": "my_unit", "file": "main.py"}
+        result = _unit_code_path("/code", unit, "main.py")
+        self.assertEqual(result, Path("/code/my_unit/main.py"))
+
+    def test_with_path(self):
+        """With path field, resolves as code_dir / path (id not used)."""
+        unit = {"id": "my_unit", "file": "main.py", "path": "src/pkg/main.py"}
+        result = _unit_code_path("/code", unit, "main.py")
+        self.assertEqual(result, Path("/code/src/pkg/main.py"))
+
+    def test_path_ignores_filename_arg(self):
+        """When path is set, the filename argument is ignored."""
+        unit = {"id": "u", "file": "a.py", "path": "pkg/b.py"}
+        result = _unit_code_path("/code", unit, "a.py")
+        self.assertEqual(result, Path("/code/pkg/b.py"))
+
+    def test_path_with_pathlib(self):
+        """Works with Path objects for code_dir."""
+        unit = {"id": "u", "path": "lib/util.py"}
+        result = _unit_code_path(Path("/root"), unit, "util.py")
+        self.assertEqual(result, Path("/root/lib/util.py"))
 
 
 # ---------------------------------------------------------------------------
@@ -264,8 +291,8 @@ class TestServer(unittest.TestCase):
 
     def test_api_units_language_detection(self):
         _, data = self._get_json("/api/units")
-        py_unit = next(l for l in data if l["id"] == "monte_carlo_python")
-        java_unit = next(l for l in data if l["id"] == "monte_carlo_java")
+        py_unit = next(u for u in data if u["id"] == "monte_carlo_python")
+        java_unit = next(u for u in data if u["id"] == "monte_carlo_java")
         self.assertEqual(py_unit["language"], "python")
         self.assertEqual(java_unit["language"], "java")
 
@@ -398,13 +425,13 @@ class TestBuilder(unittest.TestCase):
     def test_build_unit_has_code(self):
         self._run_build()
         bundle = json.loads((self.tmpdir / "example" / "data" / "units.json").read_text())
-        py_unit = next(l for l in bundle["units"] if l["id"] == "monte_carlo_python")
+        py_unit = next(u for u in bundle["units"] if u["id"] == "monte_carlo_python")
         self.assertIn("estimate_pi", py_unit["code"])
 
     def test_build_unit_has_explanations(self):
         self._run_build()
         bundle = json.loads((self.tmpdir / "example" / "data" / "units.json").read_text())
-        py_unit = next(l for l in bundle["units"] if l["id"] == "monte_carlo_python")
+        py_unit = next(u for u in bundle["units"] if u["id"] == "monte_carlo_python")
         self.assertIn("1", py_unit["explanations"])
 
     def test_build_diagrams(self):
@@ -416,8 +443,8 @@ class TestBuilder(unittest.TestCase):
     def test_build_language_detection(self):
         self._run_build()
         bundle = json.loads((self.tmpdir / "example" / "data" / "units.json").read_text())
-        py_unit = next(l for l in bundle["units"] if l["id"] == "monte_carlo_python")
-        java_unit = next(l for l in bundle["units"] if l["id"] == "monte_carlo_java")
+        py_unit = next(u for u in bundle["units"] if u["id"] == "monte_carlo_python")
+        java_unit = next(u for u in bundle["units"] if u["id"] == "monte_carlo_java")
         self.assertEqual(py_unit["language"], "python")
         self.assertEqual(java_unit["language"], "java")
 
@@ -611,6 +638,29 @@ class TestBuilderValidation(unittest.TestCase):
             diagrams={"comp": "graph TD\n  A-->B"},
         )
         self._run_build(config_path)  # Should not raise
+
+    def test_unit_with_path_field(self):
+        """A unit with 'path' should resolve code as code_dir/path."""
+        config_dir = self.tmpdir / "proj"
+        config_dir.mkdir(parents=True, exist_ok=True)
+        # Put code file directly in code_dir (no unit-id subdirectory)
+        code_base = config_dir / "src"
+        code_base.mkdir()
+        (code_base / "app.py").write_text("print('hello')\n")
+        # Comment file still uses unit id as namespace
+        exp_dir = config_dir / "comments" / "my_app"
+        exp_dir.mkdir(parents=True, exist_ok=True)
+        (exp_dir / "app.json").write_text(json.dumps({"1": {"text": "greeting", "hash": ""}}))
+
+        config_data = {
+            "title": "T", "code_dir": "src",
+            "units": [{"id": "my_app", "file": "app.py", "path": "app.py", "title": "App"}],
+        }
+        config_path = config_dir / "config.json"
+        config_path.write_text(json.dumps(config_data))
+        self._run_build(config_path)
+        bundle = json.loads((config_dir / "data" / "units.json").read_text())
+        self.assertIn("print('hello')", bundle["units"][0]["code"])
 
 
 class TestBuilderEdgeCases(unittest.TestCase):
@@ -1008,6 +1058,23 @@ class TestValidator(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertNotIn("no exercises defined", output)
         self.assertNotIn("no learning_objectives defined", output)
+
+    def test_unit_with_path_field(self):
+        """A unit with 'path' should resolve code as code_dir/path (no id subdirectory)."""
+        config_dir = self.tmpdir / "project"
+        config_dir.mkdir(parents=True, exist_ok=True)
+        code_base = config_dir / "src"
+        code_base.mkdir()
+        (code_base / "app.py").write_text("line1\n")
+        config_data = {
+            "title": "T", "code_dir": "src",
+            "units": [{"id": "my_app", "file": "app.py", "path": "app.py", "title": "App"}],
+        }
+        config_path = config_dir / "config.json"
+        config_path.write_text(json.dumps(config_data))
+        exit_code, output = self._run_validate(config_path)
+        self.assertEqual(exit_code, 0)
+        self.assertNotIn("code file not found", output)
 
 
 # ---------------------------------------------------------------------------

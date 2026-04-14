@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -e
+
+echo "=== ruff check ==="
+ruff check src/walk_the_code/ tests/
+
+echo "=== ty check ==="
+ty check src/walk_the_code/
+
+echo "=== tests ==="
+python3 -m unittest tests.test_wtc.TestLineHash tests.test_wtc.TestDetectLanguage \
+  tests.test_wtc.TestLoadConfig tests.test_wtc.TestUnitCodePath \
+  tests.test_wtc.TestBuilder tests.test_wtc.TestBuilderValidation \
+  tests.test_wtc.TestBuilderEdgeCases tests.test_wtc.TestValidator tests.test_wtc.TestInit
+
+echo "All checks passed."

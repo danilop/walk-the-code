@@ -214,8 +214,9 @@ This section covers manual walkthrough creation and the full config reference. I
 
 | Field | Required | Description |
 |---|---|---|
-| `id` | yes | Unique unit identifier — used as a subdirectory under `code_dir` (code is at `code_dir/<id>/<file>`) |
+| `id` | yes | Unique unit identifier — also used as the subdirectory under `code_dir` when `path` is not set (code at `code_dir/<id>/<file>`) |
 | `file` | yes | Source file to display |
+| `path` | no | Explicit path to the source file, relative to `code_dir`. When set, code is at `code_dir/<path>` and the `id` is not used as a directory segment. Useful for flat packages or monorepos where multiple units share a directory |
 | `files` | no | Array of `{path, role}` objects for multi-file units (overrides `file`) |
 | `title` | yes | Unit title |
 | `tagline` | no | One-line summary shown on index and group pages |
@@ -444,7 +445,7 @@ Enable GitHub Pages (Settings → Pages → Source: GitHub Actions) and the walk
 ## Troubleshooting
 
 - **"Port already in use"** — Try `wtc-serve 8001 --config config.json`
-- **"Unit not found"** — Check that the unit `id` matches a subdirectory in `code_dir`
+- **"Unit not found"** — Check that the unit `id` matches a subdirectory in `code_dir`, or use the `path` field to point directly at the source file
 - **Stale annotations** — Run `wtc-hash` after editing code
 - **Diagrams not rendering** — Verify the `.mmd` file exists and the `diagram` field matches the filename (without `.mmd`)
 - **Run button missing** — Only appears in server mode with `run_command` set

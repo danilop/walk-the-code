@@ -93,14 +93,20 @@ Check if `config.json` exists in the walk-the-code directory.
 3. For multi-file units, use the `files` array; for single-file units, use `file`
 4. Set `code_dir` to point at the source code relative to config.json
 
-**Path resolution:** The unit `id` is used as a subdirectory under `code_dir`. For a unit with `"id": "my_unit"` and `"file": "main.py"`, the code is expected at `code_dir/my_unit/main.py`. Comments go in `comments/my_unit/main.json` (filename without extension + `.json`). This applies to both single-file and multi-file units.
+**Path resolution:** By default, the unit `id` is used as a subdirectory under `code_dir`. For a unit with `"id": "my_unit"` and `"file": "main.py"`, the code is expected at `code_dir/my_unit/main.py`. Comments always go in `comments/my_unit/main.json` (filename without extension + `.json`).
 
-**Flat packages:** If multiple units share the same source directory, create symlinks from each unit ID to that directory:
-```bash
-cd code_dir
-ln -s actual_package_dir unit_id_1
-ln -s actual_package_dir unit_id_2
+**Direct path:** When multiple units share the same source directory (flat packages, monorepos), add a `path` field to the unit. This resolves the code file as `code_dir/path` instead of `code_dir/id/file`, so the `id` is only used as the comment namespace:
+```json
+{
+  "code_dir": "..",
+  "units": [
+    {"id": "sdk_api",     "path": "mypackage/__init__.py", "file": "__init__.py", "title": "SDK API"},
+    {"id": "cli_entry",   "path": "mypackage/cli.py",      "file": "cli.py",      "title": "CLI Entry"},
+    {"id": "core_engine", "path": "mypackage/engine.py",    "file": "engine.py",   "title": "Core Engine"}
+  ]
+}
 ```
+No symlinks, no duplicated directories — works on all platforms including Windows.
 5. Create `walk-the-code/start.sh` so the user can launch the walkthrough with `./walk-the-code/start.sh`:
    ```bash
    #!/usr/bin/env bash

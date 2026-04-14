@@ -4,7 +4,7 @@ import json
 import sys
 from pathlib import Path
 
-from .config import _line_hash, detect_language, unit_files, primary_file, load_config
+from .config import _line_hash, _unit_code_path, detect_language, unit_files, load_config
 
 
 def build():
@@ -17,17 +17,16 @@ def build():
 
     units = []
     for unit in config.get("units", []):
-        code_path = code_dir / unit["id"] / unit["file"]
+        code_path = _unit_code_path(code_dir, unit, unit["file"])
         stem = Path(unit["file"]).stem
         exp_path = config_dir / "comments" / unit["id"] / f"{stem}.json"
         explanations = json.loads(exp_path.read_text()) if exp_path.exists() else {}
 
         # Build files array for multi-file support
         lf = unit_files(unit, default_lang)
-        pf = next((f for f in lf if f["role"] == "primary"), lf[0])
         files_data = []
         for fe in lf:
-            fp = code_dir / unit["id"] / fe["path"]
+            fp = _unit_code_path(code_dir, unit, fe["path"])
             fstem = Path(fe["path"]).stem
             fexp_path = config_dir / "comments" / unit["id"] / f"{fstem}.json"
             fexp = json.loads(fexp_path.read_text()) if fexp_path.exists() else {}
@@ -92,7 +91,7 @@ def build():
                         warnings.append(f"{lid}/{fpath}: line {line_num} hash mismatch (annotation may be outdated)")
 
     # Group unit and diagram references (recursive)
-    all_unit_ids = {l["id"] for l in units}
+    all_unit_ids = {u["id"] for u in units}
     def _validate_groups(chs):
         for ch in chs:
             for unit_id in ch.get("units", []):

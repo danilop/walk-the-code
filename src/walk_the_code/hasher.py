@@ -4,7 +4,7 @@ import json
 import sys
 from pathlib import Path
 
-from .config import _line_hash, load_config, unit_files
+from .config import _line_hash, _unit_code_path, load_config
 
 
 def hash():
@@ -34,7 +34,7 @@ def hash():
         files = [f["path"] for f in unit["files"]] if unit.get("files") else [unit["file"]]
 
         for code_file in files:
-            code_path = code_dir / uid / code_file
+            code_path = _unit_code_path(code_dir, unit, code_file)
             stem = Path(code_file).stem
             exp_path = comments_dir / uid / f"{stem}.json"
 

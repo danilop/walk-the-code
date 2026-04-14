@@ -4,7 +4,7 @@ import json
 import sys
 from pathlib import Path
 
-from .config import _line_hash, detect_language, unit_files, load_config
+from .config import _line_hash, _unit_code_path, unit_files, load_config
 
 
 def validate():
@@ -58,7 +58,7 @@ def validate():
         all_unit_ids.add(unit_id)
 
         # Code file exists
-        code_path = code_dir / unit_id / unit.get("file", "")
+        code_path = _unit_code_path(code_dir, unit, unit.get("file", ""))
         if unit.get("file"):
             if not code_path.exists():
                 errors.append(f"{prefix}: code file not found: {code_path}")
@@ -96,7 +96,7 @@ def validate():
         lf = unit_files(unit, default_lang)
         all_file_explanations = {}  # path -> explanations dict
         for fe in lf:
-            fpath = code_dir / unit_id / fe["path"]
+            fpath = _unit_code_path(code_dir, unit, fe["path"])
             if not fpath.exists():
                 errors.append(f"{prefix}: file '{fe['path']}' not found: {fpath}")
             fstem = Path(fe["path"]).stem
@@ -255,7 +255,7 @@ def validate():
         print(f"    {'Overall:':<{max_id_len + 1}}  {total_annotated}/{total_code_lines} lines ({overall_pct}%)")
         if overall_pct < 50:
             warnings.append(f"Overall annotation coverage is {overall_pct}% (below 50%)")
-            print(f"    ~ Warning: overall annotation coverage is below 50%")
+            print("    ~ Warning: overall annotation coverage is below 50%")
         print()
 
     # --- Important ratio ---
@@ -271,7 +271,7 @@ def validate():
         print(f"    {'Overall:':<{max_id_len2 + 1}}  {total_imp}/{total_ann} ({overall_imp_pct}%)")
         if overall_imp_pct > 20:
             warnings.append(f"Important ratio is {overall_imp_pct}% (above 20% — consider demoting some lines)")
-            print(f"    ~ Warning: important ratio is above 20%")
+            print("    ~ Warning: important ratio is above 20%")
         print()
 
     # --- Strict mode: promote stale hashes to errors ---

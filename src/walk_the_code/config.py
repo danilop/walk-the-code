@@ -62,3 +62,15 @@ def primary_file(unit, default_lang):
     """Return the primary file entry for a unit."""
     files = unit_files(unit, default_lang)
     return next((f for f in files if f["role"] == "primary"), files[0])
+
+
+def _unit_code_path(code_dir, unit, filename):
+    """Resolve the code file path for a unit.
+
+    When the unit has a ``path`` field, resolve as ``code_dir / path``
+    (the id is not used as a directory segment).  Otherwise fall back to
+    the legacy ``code_dir / id / filename`` convention.
+    """
+    if "path" in unit:
+        return Path(code_dir) / unit["path"]
+    return Path(code_dir) / unit.get("id", "") / filename
