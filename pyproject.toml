@@ -1,6 +1,6 @@
 [project]
 name = "walk-the-code"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Interactive line-by-line code tutorial viewer with multi-language support and Mermaid diagrams"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -17,6 +17,9 @@ wtc-hash = "walk_the_code.cli:hash"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+# Version comes from the commit date; see hatch_build.py.
+[tool.hatch.metadata.hooks.custom]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/walk_the_code"]

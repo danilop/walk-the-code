@@ -74,6 +74,33 @@ $WTC wtc-init                                 # scaffold a new tutorial project 
 $WTC wtc-validate path/to/config.json          # validate config and content
 $WTC wtc-hash path/to/config.json              # add/update content hashes in comment files
 $WTC walk-the-code --config path/to/config.json # alias for wtc-serve
+$WTC wtc-serve --version                       # which build am I running?
+```
+
+### Versioning
+
+The version is the UTC commit date of the build, as `YYYYMMDDHHmmSS`, so it
+sorts chronologically and a given commit always builds to the same number.
+Any command accepts `--version` (or `-V`), and installs from a git URL also
+report the commit:
+
+```console
+$ wtc-serve --version
+walk-the-code 20260824100332 (commit 6210c76c41f1)
+```
+
+That makes a stale install obvious. To check whether the newest code is
+actually installed, compare against the remote:
+
+```bash
+uv tool list | grep walk-the-code
+git ls-remote https://github.com/danilop/walk-the-code HEAD
+```
+
+`uv` caches git checkouts, so refresh with both flags:
+
+```bash
+uv tool install --force --refresh "walk-the-code @ git+https://github.com/danilop/walk-the-code"
 ```
 
 ## How it works
