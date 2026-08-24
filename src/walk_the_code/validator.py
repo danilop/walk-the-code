@@ -1,10 +1,54 @@
 """Validate a walk-the-code project configuration and content."""
 
 import json
+import re
 import sys
 from pathlib import Path
 
 from .config import _line_hash, _unit_code_path, unit_files, load_config
+
+
+_FLOWCHART_RE = re.compile(r"^\s*(?:graph|flowchart)\b", re.M)
+_NODE_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)\s*[\[\(\{]")
+_EDGE_RE = re.compile(r"-->|-\.[^.\n]*\.->|-\.->|==>|===")
+
+
+def _check_highlight(highlight, diag_id, diag_path):
+    """Yield error strings for highlight targets that cannot resolve.
+
+    Node ids must exist in the diagram, link indices must be in range, and a
+    highlight on a non-flowchart diagram is inert (mermaid's class/linkStyle
+    directives are flowchart-only), so flag it rather than silently ignore it.
+    """
+    if not highlight:
+        return
+    if isinstance(highlight, dict):
+        nodes = highlight.get("nodes") or []
+        links = highlight.get("links") or []
+    elif isinstance(highlight, list):
+        nodes, links = highlight, []
+    else:
+        yield f"highlight for '{diag_id}' must be an object or a list"
+        return
+
+    src = diag_path.read_text()
+    body = "\n".join(l for l in src.split("\n") if not l.strip().startswith("%%"))
+    if not _FLOWCHART_RE.match(body.lstrip("\n")):
+        yield (
+            f"highlight on '{diag_id}' has no effect: it is a "
+            f"{body.strip().split()[0] if body.strip() else 'non-flowchart'} diagram, "
+            f"and highlighting only applies to flowcharts"
+        )
+        return
+
+    ids = set(_NODE_RE.findall(src))
+    for n in nodes:
+        if n not in ids:
+            yield f"highlight node '{n}' is not a node in '{diag_id}'"
+    n_edges = len(_EDGE_RE.findall(src))
+    for i in links:
+        if not isinstance(i, int) or i < 0 or i >= n_edges:
+            yield f"highlight link {i} is out of range for '{diag_id}' ({n_edges} edges)"
 
 
 def validate():
@@ -148,6 +192,11 @@ def validate():
                             errors.append(
                                 f"{prefix} ({fpath_str}): line {line_num} references diagram '{diag_id}' "
                                 f"but {diag_path.name} not found"
+                            )
+                        else:
+                            errors.extend(
+                                f"{prefix} ({fpath_str}): line {line_num} {msg}"
+                                for msg in _check_highlight(entry.get("highlight"), diag_id, diag_path)
                             )
 
                     if isinstance(entry, dict) and entry.get("hash") and 1 <= line_num <= total_lines:

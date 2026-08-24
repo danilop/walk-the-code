@@ -5,6 +5,10 @@
   "description": "Schema for walk-the-code config.json — defines project metadata, group structure, unit definitions, and optional run commands for an interactive line-by-line code tutorial.",
   "type": "object",
   "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional JSON Schema reference used by editors for validation."
+    },
     "title": {
       "type": "string",
       "description": "Project title shown on the index page."
@@ -133,8 +137,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "pattern": "^[a-zA-Z_][a-zA-Z0-9_-]*$",
-          "description": "Unique unit identifier. Must be a valid identifier (letters, digits, underscores, and hyphens; must start with a letter or underscore). Matches a subdirectory in code_dir."
+          "pattern": "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$",
+          "description": "Unique unit identifier. Must be a valid identifier (letters, digits, underscores, and hyphens; must start with a letter, digit, or underscore). Matches a subdirectory in code_dir."
         },
         "file": {
           "type": "string",

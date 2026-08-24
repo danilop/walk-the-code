@@ -149,9 +149,14 @@ function normalizeDiagramHighlight(highlight) {
 
 /**
  * @param {{nodes: string[], links: number[]}} highlight
+ * @param {string} source
  * @returns {string}
  */
-function buildDiagramHighlightStyles(highlight) {
+function buildDiagramHighlightStyles(highlight, source) {
+  // `class` and `linkStyle` are flowchart-only directives. Appending them to a
+  // gantt, sequenceDiagram or any other diagram type is a parse error that
+  // loses the whole picture, so only inject when the source is a flowchart.
+  if (!/^\s*(?:graph|flowchart)\b/.test(source || "")) return "";
   const parts = [];
   if (highlight.nodes.length) {
     parts.push("classDef wtcHighlight fill:#f96,stroke:#333,stroke-width:2px,color:#111");
@@ -225,7 +230,7 @@ export async function showExplanation(lineNum, mermaidInstance) {
       diagEl.classList.remove("hidden");
       let src = state.diagrams[diagId];
       const highlight = normalizeDiagramHighlight(getExp(key, "highlight"));
-      src += buildDiagramHighlightStyles(highlight);
+      src += buildDiagramHighlightStyles(highlight, src);
       const renderId = `wtc-d-${++diagramCounter}`;
       try {
         const { svg } = await mermaidInstance.render(renderId, src);

@@ -18,14 +18,14 @@
 <script>
 async function loadData() {
   try {
-    const [labsRes, chaptersRes, config] = await Promise.all([
+    const [unitsRes, groupsRes, config] = await Promise.all([
       fetch("/api/units"),
       fetch("/api/groups").catch(() => null),
       window.WTCSite.loadConfig(),
     ]);
-    if (labsRes.ok) {
-      const units = await labsRes.json();
-      const groups = chaptersRes && chaptersRes.ok ? await chaptersRes.json() : null;
+    if (unitsRes.ok) {
+      const units = await unitsRes.json();
+      const groups = groupsRes && groupsRes.ok ? await groupsRes.json() : null;
       return {units, groups, config};
     }
   } catch(e) {}
@@ -46,18 +46,18 @@ loadData().then(({units, groups, config}) => {
       groups.forEach((ch, ci) => {
         const num = prefix ? `${prefix}.${ci+1}` : `${ci+1}`;
         const chUnits = (ch.units||[]).map(id => unitMap[id]).filter(Boolean);
-        const countLabel = chLabs.length !== 1 ? terms.unitPlural.toLowerCase() : terms.unit.toLowerCase();
+        const countLabel = chUnits.length !== 1 ? terms.unitPlural.toLowerCase() : terms.unit.toLowerCase();
         const div = document.createElement("div"); div.className = "group";
         if (depth > 0) div.classList.add("group-nested");
         if (depth > 0) div.style.marginLeft = (depth * 24) + "px";
         const isFirst = depth === 0 && ci === 0;
-        div.innerHTML = `<div class="group-header${isFirst?" open":""}"><span class="group-num">${WTCSite.escapeHtml(terms.group)} ${num}</span><span class="group-title">${WTCSite.escapeHtml(ch.title)}</span><a class="group-link" href="group.html?group=${ch.id}" onclick="event.stopPropagation()">About →</a><span class="group-count">${chLabs.length} ${WTCSite.escapeHtml(countLabel)}</span><span class="group-arrow">▶</span></div><ul class="group-units${isFirst?" open":""}"></ul>`;
+        div.innerHTML = `<div class="group-header${isFirst?" open":""}"><span class="group-num">${WTCSite.escapeHtml(terms.group)} ${num}</span><span class="group-title">${WTCSite.escapeHtml(ch.title)}</span><a class="group-link" href="group.html?group=${ch.id}" onclick="event.stopPropagation()">About →</a><span class="group-count">${chUnits.length} ${WTCSite.escapeHtml(countLabel)}</span><span class="group-arrow">▶</span></div><ul class="group-units${isFirst?" open":""}"></ul>`;
         const ul = div.querySelector("ul");
-        chLabs.forEach(l => { ul.innerHTML += `<li class="unit-item"><a href="unit.html?unit=${l.id}"><span class="unit-num">${String(l.idx+1).padStart(2,"0")}</span><div><div class="unit-title-text">${WTCSite.escapeHtml(l.title)}</div><div class="unit-tagline">${WTCSite.escapeHtml(l.tagline||"")}</div></div></a></li>`; });
+        chUnits.forEach(l => { ul.innerHTML += `<li class="unit-item"><a href="unit.html?unit=${l.id}"><span class="unit-num">${String(l.idx+1).padStart(2,"0")}</span><div><div class="unit-title-text">${WTCSite.escapeHtml(l.title)}</div><div class="unit-tagline">${WTCSite.escapeHtml(l.tagline||"")}</div></div></a></li>`; });
         div.querySelector(".group-header").onclick = function() { this.classList.toggle("open"); ul.classList.toggle("open"); };
         parentEl.appendChild(div);
         if (ch.groups && ch.groups.length) {
-          renderGroups(ch.groups, parentEl, labMap, terms, depth + 1, num);
+          renderGroups(ch.groups, parentEl, unitMap, terms, depth + 1, num);
         }
       });
     }

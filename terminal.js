@@ -41,8 +41,8 @@ function updateScrollButton() {
 export function initTerminal(unitId, serverMode, options) {
   currentUnitId = unitId;
   if (options?.getModifiedCode) getModifiedCode = options.getModifiedCode;
-  document.getElementById("play-btn").onclick = runLab;
-  document.getElementById("stop-btn").onclick = stopLab;
+  document.getElementById("play-btn").onclick = runUnit;
+  document.getElementById("stop-btn").onclick = stopUnit;
   document.getElementById("terminal-close").onclick = closeTerminal;
   document.getElementById("terminal-maximize").onclick = toggleSize;
 
@@ -91,7 +91,7 @@ export function initTerminal(unitId, serverMode, options) {
   });
 }
 
-function runLab() {
+function runUnit() {
   if (unitRunning) return; unitRunning = true;
   autoScroll = true; // Reset auto-scroll on new run
   const panel=document.getElementById("terminal-panel"), output=document.getElementById("terminal-output"), status=document.getElementById("terminal-status");
@@ -173,7 +173,7 @@ function runLab() {
   }
 }
 
-function stopLab() { fetch(`/api/stop/${currentUnitId}`); if(eventSource){eventSource.close();eventSource=null;} unitRunning=false; closeTerminal(); }
+function stopUnit() { fetch(`/api/stop/${currentUnitId}`); if(eventSource){eventSource.close();eventSource=null;} unitRunning=false; closeTerminal(); }
 
 function closeTerminal() {
   if(unitRunning){fetch(`/api/stop/${currentUnitId}`);if(eventSource){eventSource.close();eventSource=null;}unitRunning=false;}
